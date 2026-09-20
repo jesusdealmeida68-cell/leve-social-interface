@@ -176,11 +176,12 @@ function PostDetailContent({ post }: { post: Post }) {
 
           <p className="mt-5 text-[15px] leading-6">{post.caption}</p>
 
-          <div className="-mx-2 mt-4 flex items-center gap-0.5">
+          <div className="-mx-1.5 mt-4 flex items-center gap-1">
             <ActionButton
               label="Curtir"
               pressed={liked}
               active={liked}
+              tone="like"
               count={formatCount(post.likes + (liked ? 1 : 0))}
               onClick={() => setLiked(!liked)}
             >

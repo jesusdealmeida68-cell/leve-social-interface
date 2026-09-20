@@ -109,6 +109,7 @@ export function ActionButton({
   count,
   active = false,
   pressed,
+  tone = "primary",
   onClick,
   children,
 }: {
@@ -116,6 +117,7 @@ export function ActionButton({
   count?: string;
   active?: boolean;
   pressed?: boolean;
+  tone?: "primary" | "like";
   onClick?: () => void;
   children: ReactNode;
 }) {
@@ -126,8 +128,11 @@ export function ActionButton({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-muted-foreground transition-[color,background-color,transform] hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95",
-        active && "text-primary hover:text-primary",
+        "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-muted-foreground transition-[color,background-color,transform] hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-90",
+        active &&
+          (tone === "like"
+            ? "bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
+            : "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"),
       )}
     >
       {children}

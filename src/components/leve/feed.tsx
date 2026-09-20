@@ -114,11 +114,12 @@ export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         />
       </button>
 
-      <div className="mt-3 flex items-center gap-0.5">
+      <div className="-mx-1 mt-3 flex items-center gap-1">
         <ActionButton
           label="Curtir"
           pressed={liked}
           active={liked}
+          tone="like"
           count={formatCount(post.likes + (liked ? 1 : 0))}
           onClick={() => setLiked(!liked)}
         >
