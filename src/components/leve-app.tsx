@@ -62,6 +62,7 @@ const posts = [
     caption: "Entre linhas, luz e silêncio. Uma tarde a criar sem pressa.",
     likes: 2480,
     comments: 128,
+    views: 18400,
     time: "Há 18 min",
   },
   {
@@ -71,6 +72,7 @@ const posts = [
     caption: "O processo também merece ser visto. Novas ideias a ganhar forma no estúdio.",
     likes: 1870,
     comments: 94,
+    views: 12900,
     time: "Há 2 h",
   },
   {
@@ -80,6 +82,7 @@ const posts = [
     caption: "Luanda desacelera quando o Atlântico encontra o fim do dia.",
     likes: 4210,
     comments: 207,
+    views: 56800,
     time: "Ontem",
   },
 ];
@@ -144,12 +147,11 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center border-r border-border bg-background/95 px-2 py-6 backdrop-blur lg:w-[248px] lg:items-stretch lg:px-5">
-        <Link to="/" className="flex justify-center lg:justify-start lg:px-3">
-          <span className="lg:hidden"><Logo compact /></span>
-          <span className="hidden lg:flex"><Logo /></span>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/95 px-5 py-6 backdrop-blur lg:flex">
+        <Link to="/" className="flex px-3">
+          <Logo />
         </Link>
-        <nav className="mt-12 flex w-full flex-col items-center space-y-1 lg:items-stretch" aria-label="Navegação principal">
+        <nav className="mt-12 flex w-full flex-col space-y-1" aria-label="Navegação principal">
           {nav.map((item) => {
             const Icon = item.icon;
             const selected = item.key === section;
@@ -157,20 +159,19 @@ export function LeveApp({ section }: { section: Section }) {
               <Link
                 key={item.key}
                 to={item.path}
-                className={`relative flex h-12 items-center justify-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors lg:justify-start ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                className={`flex h-12 items-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               >
                 <Icon className="size-5" strokeWidth={selected ? 2.4 : 1.8} />
-                <span className="hidden lg:inline">{item.label}</span>
-                {item.key === "messages" && <span className="absolute right-3 top-3 size-1.5 rounded-full bg-primary lg:static lg:ml-auto" />}
+                <span>{item.label}</span>
+                {item.key === "messages" && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
         </nav>
-        <Button className="mt-8 h-12 w-full px-0 lg:px-4" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
-          <PenLine /><span className="hidden lg:inline">Criar publicação</span>
+        <Button className="mt-8 h-12 w-full" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
+          <PenLine /><span>Criar publicação</span>
         </Button>
-        <Link to="/perfil" className="mt-auto lg:hidden" aria-label="Perfil de Amara Costa"><Avatar person={amara} size="sm" /></Link>
-        <div className="mt-auto hidden items-center gap-3 rounded-md border border-border p-3 lg:flex">
+        <div className="mt-auto flex items-center gap-3 rounded-md border border-border p-3">
           <Avatar person={amara} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">Amara Costa</p>
@@ -180,7 +181,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 pl-20 pr-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 px-4 backdrop-blur-xl lg:hidden">
         <Logo />
         <span className="text-sm font-semibold">{nav.find((item) => item.key === section)?.label}</span>
         <div className="justify-self-end">
@@ -188,7 +189,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </header>
 
-      <main className="pl-16 lg:ml-[248px] lg:pl-0">
+      <main className="pb-20 lg:ml-[248px] lg:pb-0">
         <div className={`mx-auto min-h-dvh ${section === "messages" ? "max-w-[1180px]" : "max-w-[1120px]"}`}>
           {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} />}
           {section === "messages" && <Messages />}
@@ -196,6 +197,29 @@ export function LeveApp({ section }: { section: Section }) {
           {section === "profile" && <Profile onPost={setPostOpen} />}
         </div>
       </main>
+
+      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid h-16 max-w-md grid-cols-4">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const selected = item.key === section;
+            return (
+              <Link
+                key={item.key}
+                to={item.path}
+                aria-label={item.label}
+                className={`relative flex items-center justify-center transition-colors ${selected ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Icon className="size-6" strokeWidth={selected ? 2.4 : 1.8} />
+                {item.key === "messages" && <span className="absolute right-1/2 top-3 size-1.5 translate-x-4 rounded-full bg-primary" />}
+                {selected && <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+
 
 
       {notice && (
@@ -259,30 +283,43 @@ function PostCard({ post, onOpen }: { post: (typeof posts)[number]; onOpen: () =
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const formatCount = (value: number) =>
+    value >= 1000 ? `${(value / 1000).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} mil` : `${value}`;
   return (
-    <article className="border-b border-border py-5 transition-colors hover:bg-card/40">
-      <div className="flex items-start gap-3 px-4">
+    <article className="border-b border-border px-4 py-4 transition-colors hover:bg-card/40">
+      <div className="flex items-center gap-3">
         <Avatar person={post.author} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{post.author.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{post.author.handle}</p>
+        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <p className="truncate text-sm font-bold">{post.author.name}</p>
+          <p className="truncate text-sm text-muted-foreground">{post.author.handle} · {post.time}</p>
         </div>
-        <Button variant={following ? "secondary" : "outline"} size="sm" onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
+        <Button variant={following ? "secondary" : "outline"} size="sm" className="shrink-0" onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
         <IconButton label="Mais opções"><MoreHorizontal /></IconButton>
       </div>
-      <button onClick={onOpen} className="mt-4 block w-full overflow-hidden bg-secondary text-left">
+      <p className="mt-3 text-sm leading-6">{post.caption}</p>
+      <button onClick={onOpen} className="mt-3 block w-full overflow-hidden rounded-2xl border border-border bg-secondary text-left">
         <img src={post.image} alt="Publicação editorial" className="aspect-[4/5] w-full object-cover transition-transform duration-700 hover:scale-[1.01] sm:aspect-[5/4]" loading="lazy" width={1200} height={1504} />
       </button>
-      <div className="px-4 pt-3">
-        <div className="flex items-center gap-1">
-          <IconButton label="Curtir" active={liked} onClick={() => setLiked(!liked)}><Heart fill={liked ? "currentColor" : "none"} /></IconButton>
-          <IconButton label="Comentários" onClick={onOpen}><MessageCircle /></IconButton>
-          <IconButton label="Compartilhar"><Send /></IconButton>
-          <span className="ml-1 text-xs text-muted-foreground">{(post.likes + (liked ? 1 : 0)).toLocaleString("pt-PT")} gostos · {post.comments} comentários</span>
-          <div className="ml-auto"><IconButton label="Guardar" active={saved} onClick={() => setSaved(!saved)}><Bookmark fill={saved ? "currentColor" : "none"} /></IconButton></div>
-        </div>
-        <p className="mt-2 text-sm leading-6"><span className="mr-2 font-semibold">{post.author.handle}</span>{post.caption}</p>
-        <p className="mt-2 text-[11px] uppercase text-muted-foreground">{post.time}</p>
+      <div className="mt-2 flex items-center justify-between text-muted-foreground">
+        <button onClick={onOpen} aria-label="Comentários" className="group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
+          <MessageCircle className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(post.comments)}</span>
+        </button>
+        <button aria-label="Republicar" className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
+          <Share2 className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(Math.round(post.likes / 3))}</span>
+        </button>
+        <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors ${liked ? "text-primary" : "hover:text-primary"}`}>
+          <Heart className="size-5" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
+          <span className="text-xs font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
+        </button>
+        <span className="flex items-center gap-1.5 px-2 py-1.5">
+          <Eye className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(post.views)}</span>
+        </span>
+        <button onClick={() => setSaved(!saved)} aria-label="Guardar" className={`rounded-full px-2 py-1.5 transition-colors ${saved ? "text-primary" : "hover:text-primary"}`}>
+          <Bookmark className="size-5" strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
+        </button>
       </div>
     </article>
   );
