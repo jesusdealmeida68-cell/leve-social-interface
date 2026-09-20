@@ -283,30 +283,43 @@ function PostCard({ post, onOpen }: { post: (typeof posts)[number]; onOpen: () =
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const formatCount = (value: number) =>
+    value >= 1000 ? `${(value / 1000).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} mil` : `${value}`;
   return (
-    <article className="border-b border-border py-5 transition-colors hover:bg-card/40">
-      <div className="flex items-start gap-3 px-4">
+    <article className="border-b border-border px-4 py-4 transition-colors hover:bg-card/40">
+      <div className="flex items-center gap-3">
         <Avatar person={post.author} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{post.author.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{post.author.handle}</p>
+        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <p className="truncate text-sm font-bold">{post.author.name}</p>
+          <p className="truncate text-sm text-muted-foreground">{post.author.handle} · {post.time}</p>
         </div>
-        <Button variant={following ? "secondary" : "outline"} size="sm" onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
+        <Button variant={following ? "secondary" : "outline"} size="sm" className="shrink-0" onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
         <IconButton label="Mais opções"><MoreHorizontal /></IconButton>
       </div>
-      <button onClick={onOpen} className="mt-4 block w-full overflow-hidden bg-secondary text-left">
+      <p className="mt-3 text-sm leading-6">{post.caption}</p>
+      <button onClick={onOpen} className="mt-3 block w-full overflow-hidden rounded-2xl border border-border bg-secondary text-left">
         <img src={post.image} alt="Publicação editorial" className="aspect-[4/5] w-full object-cover transition-transform duration-700 hover:scale-[1.01] sm:aspect-[5/4]" loading="lazy" width={1200} height={1504} />
       </button>
-      <div className="px-4 pt-3">
-        <div className="flex items-center gap-1">
-          <IconButton label="Curtir" active={liked} onClick={() => setLiked(!liked)}><Heart fill={liked ? "currentColor" : "none"} /></IconButton>
-          <IconButton label="Comentários" onClick={onOpen}><MessageCircle /></IconButton>
-          <IconButton label="Compartilhar"><Send /></IconButton>
-          <span className="ml-1 text-xs text-muted-foreground">{(post.likes + (liked ? 1 : 0)).toLocaleString("pt-PT")} gostos · {post.comments} comentários</span>
-          <div className="ml-auto"><IconButton label="Guardar" active={saved} onClick={() => setSaved(!saved)}><Bookmark fill={saved ? "currentColor" : "none"} /></IconButton></div>
-        </div>
-        <p className="mt-2 text-sm leading-6"><span className="mr-2 font-semibold">{post.author.handle}</span>{post.caption}</p>
-        <p className="mt-2 text-[11px] uppercase text-muted-foreground">{post.time}</p>
+      <div className="mt-2 flex items-center justify-between text-muted-foreground">
+        <button onClick={onOpen} aria-label="Comentários" className="group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
+          <MessageCircle className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(post.comments)}</span>
+        </button>
+        <button aria-label="Republicar" className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
+          <Share2 className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(Math.round(post.likes / 3))}</span>
+        </button>
+        <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors ${liked ? "text-primary" : "hover:text-primary"}`}>
+          <Heart className="size-5" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
+          <span className="text-xs font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
+        </button>
+        <span className="flex items-center gap-1.5 px-2 py-1.5">
+          <Eye className="size-5" strokeWidth={1.8} />
+          <span className="text-xs font-medium">{formatCount(post.views)}</span>
+        </span>
+        <button onClick={() => setSaved(!saved)} aria-label="Guardar" className={`rounded-full px-2 py-1.5 transition-colors ${saved ? "text-primary" : "hover:text-primary"}`}>
+          <Bookmark className="size-5" strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
+        </button>
       </div>
     </article>
   );
