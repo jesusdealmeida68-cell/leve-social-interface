@@ -8,10 +8,8 @@ import {
   Eye,
   Film,
   Heart,
-  Home,
   Image as ImageIcon,
   MessageCircle,
-  MessagesSquare,
   MoreHorizontal,
   Paperclip,
   PenLine,
@@ -20,7 +18,6 @@ import {
   Search,
   Send,
   Sparkles,
-  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
@@ -40,10 +37,10 @@ import editorialThree from "@/assets/leve-editorial-3.jpg";
 type Section = "feed" | "messages" | "stories" | "profile";
 
 const nav = [
-  { key: "feed", label: "Feed", path: "/", icon: Home },
-  { key: "messages", label: "Mensagens", path: "/mensagens", icon: MessagesSquare },
-  { key: "stories", label: "História", path: "/historia", icon: Film },
-  { key: "profile", label: "Perfil", path: "/perfil", icon: UserRound },
+  { key: "feed", label: "Feed", path: "/", icon: FeedIcon },
+  { key: "messages", label: "Mensagens", path: "/mensagens", icon: MessagesIcon },
+  { key: "stories", label: "História", path: "/historia", icon: StoryIcon },
+  { key: "profile", label: "Perfil", path: "/perfil", icon: ProfileIcon },
 ] as const;
 
 const amara = { name: "Amara Costa", handle: "@amaracosta", image: editorialOne };
@@ -90,6 +87,72 @@ const conversations = [
   { ...joel, message: "Enviei os esboços novos.", time: "18:16", unread: 0 },
   { ...lina, message: "Até amanhã ✦", time: "Ontem", unread: 0 },
 ] as const;
+
+type NavIconProps = { active?: boolean; className?: string };
+
+const outline = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
+function FeedIcon({ active = false, className }: NavIconProps) {
+  const d = "M3 10.6 12 3l9 7.6V19.5a1.5 1.5 0 0 1-1.5 1.5H15v-5.5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1V21H4.5A1.5 1.5 0 0 1 3 19.5z";
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      {active ? <path d={d} fill="currentColor" /> : <path d={d} {...outline} />}
+    </svg>
+  );
+}
+
+function MessagesIcon({ active = false, className }: NavIconProps) {
+  const bubble = "M12 3C7 3 3 6.6 3 11c0 2.2 1 4.2 2.6 5.6L4.6 21l4.5-1.8c.9.2 1.9.3 2.9.3 5 0 9-3.6 9-8.5S17 3 12 3z";
+  const dots = "M7 11a1 1 0 1 0 2 0 1 1 0 1 0-2 0zM11 11a1 1 0 1 0 2 0 1 1 0 1 0-2 0zM15 11a1 1 0 1 0 2 0 1 1 0 1 0-2 0z";
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      {active ? (
+        <path d={`${bubble}${dots}`} fill="currentColor" fillRule="evenodd" />
+      ) : (
+        <>
+          <path d={bubble} {...outline} />
+          <path d={dots} fill="currentColor" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function StoryIcon({ active = false, className }: NavIconProps) {
+  const ring = "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z";
+  const play = "M10 8.6v6.8a.6.6 0 0 0 .9.5l5.3-3.4a.6.6 0 0 0 0-1l-5.3-3.4a.6.6 0 0 0-.9.5z";
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      {active ? (
+        <path d={`${ring}${play}`} fill="currentColor" fillRule="evenodd" />
+      ) : (
+        <>
+          <path d={ring} {...outline} />
+          <path d={play} {...outline} />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function ProfileIcon({ active = false, className }: NavIconProps) {
+  const shoulders = "M4 20.5C4 16.9 7.6 14.5 12 14.5s8 2.4 8 6z";
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      {active ? (
+        <>
+          <circle cx="12" cy="8" r="4.2" fill="currentColor" />
+          <path d={shoulders} fill="currentColor" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="8" r="4.2" {...outline} />
+          <path d={shoulders} {...outline} />
+        </>
+      )}
+    </svg>
+  );
+}
 
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
@@ -145,7 +208,7 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/95 px-6 py-8 backdrop-blur lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/5 bg-transparent px-6 py-8 lg:flex">
         <Link to="/" className="flex px-3">
           <Logo />
         </Link>
@@ -157,9 +220,9 @@ export function LeveApp({ section }: { section: Section }) {
               <Link
                 key={item.key}
                 to={item.path}
-                className={`flex h-12 items-center gap-4 rounded-full px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                className={`flex h-12 items-center gap-4 rounded-full px-4 text-sm font-semibold transition-colors ${selected ? "text-foreground" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}
               >
-                <Icon className="size-5" strokeWidth={selected ? 2.4 : 1.8} />
+                <Icon className="size-6" active={selected} />
                 <span>{item.label}</span>
                 {item.key === "messages" && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
               </Link>
@@ -221,7 +284,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </main>
 
-      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl lg:hidden">
+      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-background/25 backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid h-16 max-w-md grid-cols-4">
           {nav.map((item) => {
             const Icon = item.icon;
@@ -233,7 +296,7 @@ export function LeveApp({ section }: { section: Section }) {
                 aria-label={item.label}
                 className={`relative flex items-center justify-center transition-colors ${selected ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <Icon className="size-6" strokeWidth={selected ? 2.4 : 1.8} />
+                <Icon className="size-[26px]" active={selected} />
                 {item.key === "messages" && <span className="absolute right-1/2 top-3 size-1.5 translate-x-4 rounded-full bg-primary" />}
                 {selected && <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />}
               </Link>
