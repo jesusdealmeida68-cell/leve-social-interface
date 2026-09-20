@@ -10,7 +10,6 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
-  Link2,
   MessageCircle,
   MessagesSquare,
   MoreHorizontal,
