@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Person } from "./data";
+import leveIcon from "@/assets/leve-icon.png";
 
 export function formatCount(value: number) {
   return value >= 1000
@@ -9,13 +10,41 @@ export function formatCount(value: number) {
     : `${value}`;
 }
 
-export function Logo() {
+const logoIconSizes = {
+  sm: "size-6",
+  md: "size-7",
+  lg: "size-9",
+} as const;
+
+const logoTextSizes = {
+  sm: "text-lg",
+  md: "text-[1.6rem]",
+  lg: "text-3xl",
+} as const;
+
+export function Logo({
+  size = "md",
+  className,
+}: {
+  size?: keyof typeof logoIconSizes;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5" aria-label="LEVE">
-      <span className="font-display text-[1.6rem] font-bold leading-none tracking-[0.08em]">
+    <span className={cn("inline-flex items-center gap-2", className)} aria-label="LEVE">
+      <img
+        src={leveIcon}
+        alt=""
+        aria-hidden="true"
+        className={cn(logoIconSizes[size], "shrink-0 object-contain")}
+      />
+      <span
+        className={cn(
+          "font-display font-bold leading-none tracking-[0.08em]",
+          logoTextSizes[size],
+        )}
+      >
         LEVE
       </span>
-      <span className="mt-1 size-2 rounded-full bg-story" aria-hidden="true" />
     </span>
   );
 }
