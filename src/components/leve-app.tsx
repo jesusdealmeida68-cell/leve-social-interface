@@ -144,9 +144,12 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] border-r border-border bg-background/95 px-5 py-6 backdrop-blur lg:flex lg:flex-col">
-        <Link to="/" className="px-3"><Logo /></Link>
-        <nav className="mt-12 space-y-1" aria-label="Navegação principal">
+      <aside className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center border-r border-border bg-background/95 px-2 py-6 backdrop-blur lg:w-[248px] lg:items-stretch lg:px-5">
+        <Link to="/" className="flex justify-center lg:justify-start lg:px-3">
+          <span className="lg:hidden"><Logo compact /></span>
+          <span className="hidden lg:flex"><Logo /></span>
+        </Link>
+        <nav className="mt-12 flex w-full flex-col items-center space-y-1 lg:items-stretch" aria-label="Navegação principal">
           {nav.map((item) => {
             const Icon = item.icon;
             const selected = item.key === section;
@@ -154,19 +157,20 @@ export function LeveApp({ section }: { section: Section }) {
               <Link
                 key={item.key}
                 to={item.path}
-                className={`flex h-12 items-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                className={`relative flex h-12 items-center justify-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors lg:justify-start ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               >
                 <Icon className="size-5" strokeWidth={selected ? 2.4 : 1.8} />
-                {item.label}
-                {item.key === "messages" && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
+                <span className="hidden lg:inline">{item.label}</span>
+                {item.key === "messages" && <span className="absolute right-3 top-3 size-1.5 rounded-full bg-primary lg:static lg:ml-auto" />}
               </Link>
             );
           })}
         </nav>
-        <Button className="mt-8 h-12 w-full" onClick={() => setComposerOpen(true)}>
-          <PenLine /> Criar publicação
+        <Button className="mt-8 h-12 w-full px-0 lg:px-4" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
+          <PenLine /><span className="hidden lg:inline">Criar publicação</span>
         </Button>
-        <div className="mt-auto flex items-center gap-3 rounded-md border border-border p-3">
+        <Link to="/perfil" className="mt-auto lg:hidden" aria-label="Perfil de Amara Costa"><Avatar person={amara} size="sm" /></Link>
+        <div className="mt-auto hidden items-center gap-3 rounded-md border border-border p-3 lg:flex">
           <Avatar person={amara} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">Amara Costa</p>
@@ -176,7 +180,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 pl-20 pr-4 backdrop-blur-xl lg:hidden">
         <Logo />
         <span className="text-sm font-semibold">{nav.find((item) => item.key === section)?.label}</span>
         <div className="justify-self-end">
@@ -184,7 +188,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </header>
 
-      <main className="pb-24 lg:ml-[248px] lg:pb-0">
+      <main className="pl-16 lg:ml-[248px] lg:pl-0">
         <div className={`mx-auto min-h-dvh ${section === "messages" ? "max-w-[1180px]" : "max-w-[1120px]"}`}>
           {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} />}
           {section === "messages" && <Messages />}
@@ -193,18 +197,6 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-4 border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" aria-label="Navegação móvel">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const selected = item.key === section;
-          return (
-            <Link key={item.key} to={item.path} className={`flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-medium ${selected ? "text-primary" : "text-muted-foreground"}`}>
-              <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
 
       {notice && (
         <div className="fixed right-4 top-16 z-50 w-[min(340px,calc(100vw-2rem))] rounded-md border border-border bg-popover p-4 shadow-2xl lg:right-8 lg:top-6">
