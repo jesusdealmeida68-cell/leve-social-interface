@@ -49,16 +49,15 @@ const nav = [
   { key: "profile", label: "Perfil", path: "/perfil", icon: UserRound },
 ] as const;
 
-const people = [
-  { name: "Amara Costa", handle: "@amaracosta", image: editorialOne },
-  { name: "Joel Mota", handle: "@joelmota", image: editorialTwo },
-  { name: "Lina Sousa", handle: "@linasousa", image: editorialThree },
-];
+const amara = { name: "Amara Costa", handle: "@amaracosta", image: editorialOne };
+const joel = { name: "Joel Mota", handle: "@joelmota", image: editorialTwo };
+const lina = { name: "Lina Sousa", handle: "@linasousa", image: editorialThree };
+const people = [amara, joel, lina] as const;
 
 const posts = [
   {
     id: 1,
-    author: people[0],
+    author: amara,
     image: editorialOne,
     caption: "Entre linhas, luz e silêncio. Uma tarde a criar sem pressa.",
     likes: 2480,
@@ -67,7 +66,7 @@ const posts = [
   },
   {
     id: 2,
-    author: people[1],
+    author: joel,
     image: editorialTwo,
     caption: "O processo também merece ser visto. Novas ideias a ganhar forma no estúdio.",
     likes: 1870,
@@ -76,7 +75,7 @@ const posts = [
   },
   {
     id: 3,
-    author: people[2],
+    author: lina,
     image: editorialThree,
     caption: "Luanda desacelera quando o Atlântico encontra o fim do dia.",
     likes: 4210,
@@ -85,11 +84,12 @@ const posts = [
   },
 ];
 
+const amaraConversation = { ...amara, message: "Adorei a direção. Vamos publicar?", time: "20:42", unread: 2 };
 const conversations = [
-  { ...people[0], message: "Adorei a direção. Vamos publicar?", time: "20:42", unread: 2 },
-  { ...people[1], message: "Enviei os esboços novos.", time: "18:16", unread: 0 },
-  { ...people[2], message: "Até amanhã ✦", time: "Ontem", unread: 0 },
-];
+  amaraConversation,
+  { ...joel, message: "Enviei os esboços novos.", time: "18:16", unread: 0 },
+  { ...lina, message: "Até amanhã ✦", time: "Ontem", unread: 0 },
+] as const;
 
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
@@ -167,7 +167,7 @@ export function LeveApp({ section }: { section: Section }) {
           <PenLine /> Criar publicação
         </Button>
         <div className="mt-auto flex items-center gap-3 rounded-md border border-border p-3">
-          <Avatar person={people[0]} size="sm" />
+          <Avatar person={amara} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">Amara Costa</p>
             <p className="truncate text-xs text-muted-foreground">@amaracosta</p>
@@ -325,7 +325,7 @@ function RightRail() {
 function Messages() {
   const [selected, setSelected] = useState<number | null>(null);
   const [query, setQuery] = useState("");
-  const active = conversations[selected ?? 0];
+  const active = conversations[selected ?? 0] ?? amaraConversation;
   const filtered = conversations.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="grid min-h-[calc(100dvh-4rem)] md:grid-cols-[340px_minmax(0,1fr)] lg:min-h-dvh">
@@ -374,7 +374,7 @@ function Profile({ onPost }: { onPost: (post: (typeof posts)[number]) => void })
       <div className="relative h-44 overflow-hidden sm:h-64"><img src={editorialThree} alt="Costa de Luanda" className="size-full object-cover" width={1200} height={1504} /><div className="absolute inset-0 bg-cover-overlay" /></div>
       <section className="px-4 sm:px-8">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-          <div className="-mt-12 min-w-0 sm:-mt-16"><span className="inline-block rounded-full border-4 border-background"><Avatar person={people[0]} size="lg" /></span><h1 className="mt-3 truncate font-display text-2xl font-semibold">Amara Costa</h1><p className="text-sm text-muted-foreground">@amaracosta</p></div>
+          <div className="-mt-12 min-w-0 sm:-mt-16"><span className="inline-block rounded-full border-4 border-background"><Avatar person={amara} size="lg" /></span><h1 className="mt-3 truncate font-display text-2xl font-semibold">Amara Costa</h1><p className="text-sm text-muted-foreground">@amaracosta</p></div>
           <div className="flex gap-2 pt-3"><Button variant="outline" size="icon" aria-label="Compartilhar perfil"><Share2 /></Button><Button>Editar perfil</Button></div>
         </div>
         <p className="mt-5 max-w-xl text-sm leading-6 text-foreground/80">Direção criativa, imagem e ideias em movimento. Luanda, Angola.</p>
@@ -389,7 +389,7 @@ function Profile({ onPost }: { onPost: (post: (typeof posts)[number]) => void })
 function StoryViewer({ index, onClose, onChange }: { index: number | null; onClose: () => void; onChange: (index: number) => void }) {
   const [reply, setReply] = useState("");
   if (index === null) return null;
-  const person = people[index % people.length];
+  const person = people[index % people.length] ?? amara;
   return (
     <div className="fixed inset-0 z-[70] bg-background/95 p-0 backdrop-blur-2xl sm:p-6" role="dialog" aria-modal="true" aria-label={`História de ${person.name}`}>
       <div className="relative mx-auto h-full max-w-md overflow-hidden bg-card sm:rounded-md"><img src={person.image} alt="História em destaque" className="size-full object-cover" width={1200} height={1504} /><div className="absolute inset-0 bg-story-view-overlay" />
