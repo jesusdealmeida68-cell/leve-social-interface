@@ -198,6 +198,29 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </main>
 
+      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid h-16 max-w-md grid-cols-4">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const selected = item.key === section;
+            return (
+              <Link
+                key={item.key}
+                to={item.path}
+                aria-label={item.label}
+                className={`relative flex items-center justify-center transition-colors ${selected ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Icon className="size-6" strokeWidth={selected ? 2.4 : 1.8} />
+                {item.key === "messages" && <span className="absolute right-1/2 top-3 size-1.5 translate-x-4 rounded-full bg-primary" />}
+                {selected && <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+
+
 
       {notice && (
         <div className="fixed right-4 top-16 z-50 w-[min(340px,calc(100vw-2rem))] rounded-md border border-border bg-popover p-4 shadow-2xl lg:right-8 lg:top-6">
