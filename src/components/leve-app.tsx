@@ -147,12 +147,11 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center border-r border-border bg-background/95 px-2 py-6 backdrop-blur lg:w-[248px] lg:items-stretch lg:px-5">
-        <Link to="/" className="flex justify-center lg:justify-start lg:px-3">
-          <span className="lg:hidden"><Logo compact /></span>
-          <span className="hidden lg:flex"><Logo /></span>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/95 px-5 py-6 backdrop-blur lg:flex">
+        <Link to="/" className="flex px-3">
+          <Logo />
         </Link>
-        <nav className="mt-12 flex w-full flex-col items-center space-y-1 lg:items-stretch" aria-label="Navegação principal">
+        <nav className="mt-12 flex w-full flex-col space-y-1" aria-label="Navegação principal">
           {nav.map((item) => {
             const Icon = item.icon;
             const selected = item.key === section;
@@ -160,20 +159,19 @@ export function LeveApp({ section }: { section: Section }) {
               <Link
                 key={item.key}
                 to={item.path}
-                className={`relative flex h-12 items-center justify-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors lg:justify-start ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                className={`flex h-12 items-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               >
                 <Icon className="size-5" strokeWidth={selected ? 2.4 : 1.8} />
-                <span className="hidden lg:inline">{item.label}</span>
-                {item.key === "messages" && <span className="absolute right-3 top-3 size-1.5 rounded-full bg-primary lg:static lg:ml-auto" />}
+                <span>{item.label}</span>
+                {item.key === "messages" && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
         </nav>
-        <Button className="mt-8 h-12 w-full px-0 lg:px-4" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
-          <PenLine /><span className="hidden lg:inline">Criar publicação</span>
+        <Button className="mt-8 h-12 w-full" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
+          <PenLine /><span>Criar publicação</span>
         </Button>
-        <Link to="/perfil" className="mt-auto lg:hidden" aria-label="Perfil de Amara Costa"><Avatar person={amara} size="sm" /></Link>
-        <div className="mt-auto hidden items-center gap-3 rounded-md border border-border p-3 lg:flex">
+        <div className="mt-auto flex items-center gap-3 rounded-md border border-border p-3">
           <Avatar person={amara} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">Amara Costa</p>
