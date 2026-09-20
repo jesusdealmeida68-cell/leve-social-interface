@@ -2,7 +2,6 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Bell,
-  Bookmark,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
@@ -21,7 +20,6 @@ import {
   Plus,
   Search,
   Send,
-  Share2,
   Sparkles,
   UserRound,
   UsersRound,
@@ -105,8 +103,8 @@ function Logo({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Avatar({ person, size = "md" }: { person: (typeof people)[number]; size?: "sm" | "md" | "lg" }) {
-  const sizes = size === "lg" ? "size-24" : size === "sm" ? "size-9" : "size-11";
+function Avatar({ person, size = "md" }: { person: (typeof people)[number]; size?: "sm" | "md" | "lg" | "xl" }) {
+  const sizes = size === "lg" ? "size-24" : size === "xl" ? "size-16" : size === "sm" ? "size-9" : "size-11";
   return (
     <img
       src={person.image}
@@ -140,6 +138,7 @@ export function LeveApp({ section }: { section: Section }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [postOpen, setPostOpen] = useState<(typeof posts)[number] | null>(null);
   const [notice, setNotice] = useState(false);
+  const [guest, setGuest] = useState(true);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -147,11 +146,11 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/95 px-5 py-6 backdrop-blur lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/95 px-6 py-8 backdrop-blur lg:flex">
         <Link to="/" className="flex px-3">
           <Logo />
         </Link>
-        <nav className="mt-12 flex w-full flex-col space-y-1" aria-label="Navegação principal">
+        <nav className="mt-14 flex w-full flex-col space-y-1.5" aria-label="Navegação principal">
           {nav.map((item) => {
             const Icon = item.icon;
             const selected = item.key === section;
@@ -159,7 +158,7 @@ export function LeveApp({ section }: { section: Section }) {
               <Link
                 key={item.key}
                 to={item.path}
-                className={`flex h-12 items-center gap-4 rounded-md px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                className={`flex h-12 items-center gap-4 rounded-full px-4 text-sm font-semibold transition-colors ${selected ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               >
                 <Icon className="size-5" strokeWidth={selected ? 2.4 : 1.8} />
                 <span>{item.label}</span>
@@ -168,30 +167,55 @@ export function LeveApp({ section }: { section: Section }) {
             );
           })}
         </nav>
-        <Button className="mt-8 h-12 w-full" onClick={() => setComposerOpen(true)} aria-label="Criar publicação">
+        <Button
+          variant="ghost"
+          className="ml-3 mt-8 h-10 w-fit gap-2 rounded-full border border-primary/40 bg-transparent px-5 text-primary hover:bg-primary/10 hover:text-primary"
+          onClick={() => setComposerOpen(true)}
+          aria-label="Criar publicação"
+        >
           <PenLine /><span>Criar publicação</span>
         </Button>
-        <div className="mt-auto flex items-center gap-3 rounded-md border border-border p-3">
-          <Avatar person={amara} size="sm" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">Amara Costa</p>
-            <p className="truncate text-xs text-muted-foreground">@amaracosta</p>
+        {guest ? (
+          <Button
+            variant="ghost"
+            className="mt-auto h-11 w-full rounded-full border border-border bg-transparent text-foreground hover:bg-accent"
+            onClick={() => setGuest(false)}
+          >
+            Entrar
+          </Button>
+        ) : (
+          <div className="mt-auto flex items-center gap-3 rounded-2xl border border-border/60 p-3.5">
+            <Avatar person={amara} size="sm" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">Amara Costa</p>
+              <p className="truncate text-xs text-muted-foreground">@amaracosta</p>
+            </div>
+            <MoreHorizontal className="ml-auto size-4 text-muted-foreground" />
           </div>
-          <MoreHorizontal className="ml-auto size-4 text-muted-foreground" />
-        </div>
+        )}
       </aside>
 
-      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border/70 bg-background/90 px-5 backdrop-blur-xl lg:hidden">
         <Logo />
         <span className="text-sm font-semibold">{nav.find((item) => item.key === section)?.label}</span>
-        <div className="justify-self-end">
+        <div className="flex items-center gap-1.5 justify-self-end">
+          {guest && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 rounded-full border border-primary/50 bg-transparent px-4 text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={() => setGuest(false)}
+            >
+              Entrar
+            </Button>
+          )}
           <IconButton label="Notificações" onClick={() => setNotice((value) => !value)}><Bell /></IconButton>
         </div>
       </header>
 
       <main className="pb-20 lg:ml-[248px] lg:pb-0">
         <div className={`mx-auto min-h-dvh ${section === "messages" ? "max-w-[1180px]" : "max-w-[1120px]"}`}>
-          {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} />}
+          {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} guest={guest} onLogin={() => setGuest(false)} />}
           {section === "messages" && <Messages />}
           {section === "stories" && <Stories onStory={setStoryIndex} onCreate={() => setComposerOpen(true)} />}
           {section === "profile" && <Profile onPost={setPostOpen} />}
@@ -235,23 +259,32 @@ export function LeveApp({ section }: { section: Section }) {
   );
 }
 
-function Feed({ onStory, onPost, notice, setNotice }: { onStory: (index: number) => void; onPost: (post: (typeof posts)[number]) => void; notice: boolean; setNotice: (value: boolean) => void }) {
+function Feed({ onStory, onPost, notice, setNotice, guest, onLogin }: { onStory: (index: number) => void; onPost: (post: (typeof posts)[number]) => void; notice: boolean; setNotice: (value: boolean) => void; guest: boolean; onLogin: () => void }) {
   const [query, setQuery] = useState("");
   const filtered = posts.filter((post) => `${post.author.name} ${post.caption}`.toLowerCase().includes(query.toLowerCase()));
   return (
-    <div className="grid xl:grid-cols-[minmax(0,680px)_320px]">
-      <section className="min-w-0 border-x border-border xl:border-l-0">
-        <div className="sticky top-16 z-20 border-b border-border bg-background/90 p-4 backdrop-blur-xl lg:top-0">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-            <label className="flex min-w-0 items-center gap-3 rounded-md border border-border bg-secondary px-4">
+    <div className="grid xl:grid-cols-[minmax(0,680px)_340px]">
+      <section className="min-w-0">
+        <div className="sticky top-16 z-20 bg-background/85 px-4 py-4 backdrop-blur-xl sm:px-6 lg:top-0 lg:py-5">
+          <div className="flex items-center gap-3">
+            <label className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-transparent px-5 transition-colors focus-within:border-primary/50">
               <Search className="size-4 shrink-0 text-muted-foreground" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} className="h-11 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Pesquisar no LEVE" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Pesquisar no LEVE" />
             </label>
-            <IconButton label="Notificações" active={notice} onClick={() => setNotice(!notice)}><Bell /></IconButton>
+            <span className="hidden lg:block"><IconButton label="Notificações" active={notice} onClick={() => setNotice(!notice)}><Bell /></IconButton></span>
+            {guest && (
+              <Button
+                variant="ghost"
+                className="hidden h-11 rounded-full border border-primary/50 bg-transparent px-6 text-primary hover:bg-primary/10 hover:text-primary lg:inline-flex"
+                onClick={onLogin}
+              >
+                Entrar
+              </Button>
+            )}
           </div>
         </div>
         <StoryStrip onStory={onStory} />
-        <div>
+        <div className="space-y-5 px-4 pb-10 sm:px-6">
           {filtered.length ? filtered.map((post) => <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />) : <div className="grid min-h-72 place-items-center text-sm text-muted-foreground">Nenhuma publicação encontrada.</div>}
         </div>
       </section>
@@ -262,16 +295,16 @@ function Feed({ onStory, onPost, notice, setNotice }: { onStory: (index: number)
 
 function StoryStrip({ onStory }: { onStory: (index: number) => void }) {
   return (
-    <div className="border-b border-border px-4 py-5">
-      <div className="scrollbar-none flex gap-4 overflow-x-auto">
+    <div className="px-4 pb-7 pt-2 sm:px-6">
+      <div className="scrollbar-none flex gap-5 overflow-x-auto py-1">
         <button className="group shrink-0 text-center" onClick={() => onStory(0)}>
-          <span className="relative block rounded-full border border-dashed border-muted-foreground p-0.5"><Avatar person={people[0]} /><span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground"><Plus className="size-3" /></span></span>
-          <span className="mt-2 block w-14 truncate text-[11px] text-muted-foreground">Sua história</span>
+          <span className="relative block rounded-full border border-dashed border-muted-foreground/60 p-[3px]"><Avatar person={people[0]} size="xl" /><span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground"><Plus className="size-3.5" /></span></span>
+          <span className="mt-2.5 block w-[72px] truncate text-xs text-muted-foreground">Sua história</span>
         </button>
         {people.map((person, index) => (
           <button key={person.handle} onClick={() => onStory(index)} className="shrink-0 text-center">
-            <span className="block rounded-full bg-story p-[2px]"><span className="block rounded-full bg-background p-[2px]"><Avatar person={person} /></span></span>
-            <span className="mt-2 block w-14 truncate text-[11px]">{person.name.split(" ")[0]}</span>
+            <span className="block rounded-full bg-story p-[2px]"><span className="block rounded-full bg-background p-[3px]"><Avatar person={person} size="xl" /></span></span>
+            <span className="mt-2.5 block w-[72px] truncate text-xs">{person.name.split(" ")[0]}</span>
           </button>
         ))}
       </div>
@@ -282,44 +315,36 @@ function StoryStrip({ onStory }: { onStory: (index: number) => void }) {
 function PostCard({ post, onOpen }: { post: (typeof posts)[number]; onOpen: () => void }) {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
-  const [saved, setSaved] = useState(false);
   const formatCount = (value: number) =>
     value >= 1000 ? `${(value / 1000).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} mil` : `${value}`;
   return (
-    <article className="border-b border-border px-4 py-4 transition-colors hover:bg-card/40">
-      <div className="flex items-center gap-3">
+    <article className="rounded-3xl border border-border/60 bg-card/40 p-5 sm:p-6">
+      <div className="flex items-center gap-3.5">
         <Avatar person={post.author} />
-        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
-          <p className="truncate text-sm font-bold">{post.author.name}</p>
-          <p className="truncate text-sm text-muted-foreground">{post.author.handle} · {post.time}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-bold leading-5">{post.author.name}</p>
+          <p className="mt-0.5 truncate text-[13px] leading-5 text-muted-foreground">{post.author.handle} · {post.time}</p>
         </div>
-        <Button variant={following ? "secondary" : "outline"} size="sm" className="shrink-0" onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
+        <Button variant="ghost" size="sm" className={`h-9 shrink-0 rounded-full border px-4 ${following ? "border-transparent text-muted-foreground" : "border-border"}`} onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
         <IconButton label="Mais opções"><MoreHorizontal /></IconButton>
       </div>
-      <p className="mt-3 text-sm leading-6">{post.caption}</p>
-      <button onClick={onOpen} className="mt-3 block w-full overflow-hidden rounded-2xl border border-border bg-secondary text-left">
+      <p className="mt-4 text-[15px] leading-7">{post.caption}</p>
+      <button onClick={onOpen} className="mt-4 block w-full overflow-hidden rounded-2xl border border-border/60 bg-secondary text-left">
         <img src={post.image} alt="Publicação editorial" className="aspect-[4/5] w-full object-cover transition-transform duration-700 hover:scale-[1.01] sm:aspect-[5/4]" loading="lazy" width={1200} height={1504} />
       </button>
-      <div className="mt-2 flex items-center justify-between text-muted-foreground">
-        <button onClick={onOpen} aria-label="Comentários" className="group flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
-          <MessageCircle className="size-5" strokeWidth={1.8} />
-          <span className="text-xs font-medium">{formatCount(post.comments)}</span>
+      <div className="mt-4 flex items-center gap-7 text-muted-foreground">
+        <button onClick={onOpen} aria-label="Comentários" className="flex items-center gap-2 transition-colors hover:text-foreground">
+          <MessageCircle className="size-[18px]" strokeWidth={1.7} />
+          <span className="text-[13px] font-medium">{formatCount(post.comments)}</span>
         </button>
-        <button aria-label="Republicar" className="flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors hover:text-primary">
-          <Share2 className="size-5" strokeWidth={1.8} />
-          <span className="text-xs font-medium">{formatCount(Math.round(post.likes / 3))}</span>
+        <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-2 transition-colors ${liked ? "text-primary" : "hover:text-foreground"}`}>
+          <Heart className="size-[18px]" strokeWidth={1.7} fill={liked ? "currentColor" : "none"} />
+          <span className="text-[13px] font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
         </button>
-        <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors ${liked ? "text-primary" : "hover:text-primary"}`}>
-          <Heart className="size-5" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
-          <span className="text-xs font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
-        </button>
-        <span className="flex items-center gap-1.5 px-2 py-1.5">
-          <Eye className="size-5" strokeWidth={1.8} />
-          <span className="text-xs font-medium">{formatCount(post.views)}</span>
+        <span className="ml-auto flex items-center gap-2">
+          <Eye className="size-[18px]" strokeWidth={1.7} />
+          <span className="text-[13px] font-medium">{formatCount(post.views)}</span>
         </span>
-        <button onClick={() => setSaved(!saved)} aria-label="Guardar" className={`rounded-full px-2 py-1.5 transition-colors ${saved ? "text-primary" : "hover:text-primary"}`}>
-          <Bookmark className="size-5" strokeWidth={1.8} fill={saved ? "currentColor" : "none"} />
-        </button>
       </div>
     </article>
   );
@@ -328,24 +353,26 @@ function PostCard({ post, onOpen }: { post: (typeof posts)[number]; onOpen: () =
 function RightRail() {
   const [followed, setFollowed] = useState<string[]>([]);
   return (
-    <aside className="hidden px-6 py-8 xl:block">
-      <div className="sticky top-8">
-        <p className="text-xs font-semibold uppercase text-muted-foreground">Descobrir pessoas</p>
-        <div className="mt-5 space-y-5">
-          {people.slice(1).map((person) => (
-            <div key={person.handle} className="flex items-center gap-3">
-              <Avatar person={person} size="sm" />
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-muted-foreground">{person.handle}</p></div>
-              <Button variant="ghost" size="sm" onClick={() => setFollowed((items) => items.includes(person.handle) ? items.filter((item) => item !== person.handle) : [...items, person.handle])}>{followed.includes(person.handle) ? "A seguir" : "Seguir"}</Button>
-            </div>
-          ))}
+    <aside className="hidden px-4 py-6 xl:block">
+      <div className="sticky top-8 space-y-5">
+        <div className="rounded-3xl border border-border/60 bg-card/40 p-6">
+          <p className="text-sm font-semibold">Descobrir pessoas</p>
+          <div className="mt-5 space-y-5">
+            {people.slice(1).map((person) => (
+              <div key={person.handle} className="flex items-center gap-3">
+                <Avatar person={person} size="sm" />
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-muted-foreground">{person.handle}</p></div>
+                <Button variant="ghost" size="sm" className={`h-8 rounded-full border px-3.5 ${followed.includes(person.handle) ? "border-transparent text-muted-foreground" : "border-border"}`} onClick={() => setFollowed((items) => items.includes(person.handle) ? items.filter((item) => item !== person.handle) : [...items, person.handle])}>{followed.includes(person.handle) ? "A seguir" : "Seguir"}</Button>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="mt-10 border-t border-border pt-6">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground"><Sparkles className="size-4 text-primary" /> Em destaque</p>
+        <div className="rounded-3xl border border-border/60 bg-card/40 p-6">
+          <p className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4 text-primary" /> Em destaque</p>
           <p className="mt-4 text-sm font-medium">Criadores de Angola</p>
           <p className="mt-1 text-xs text-muted-foreground">2,8 mil publicações hoje</p>
         </div>
-        <p className="mt-10 text-[11px] leading-5 text-muted-foreground">© 2026 LEVE · Privacidade · Termos · Sobre</p>
+        <p className="px-2 text-[11px] leading-5 text-muted-foreground">© 2026 LEVE · Privacidade · Termos · Sobre</p>
       </div>
     </aside>
   );
@@ -388,10 +415,10 @@ function Conversation({ person, visible, onBack }: { person: (typeof conversatio
 function Stories({ onStory, onCreate }: { onStory: (index: number) => void; onCreate: () => void }) {
   return (
     <div className="px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="text-xs font-semibold uppercase text-primary">Últimas 24 horas</p><h1 className="mt-2 truncate font-display text-3xl font-semibold sm:text-4xl">Histórias</h1></div><Button onClick={onCreate}><CirclePlus /> Adicionar</Button></header>
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-        <button onClick={onCreate} className="group relative aspect-[3/5] overflow-hidden rounded-md border border-dashed border-muted-foreground bg-secondary"><div className="absolute inset-0 grid place-items-center"><span className="text-center"><span className="mx-auto grid size-12 place-items-center rounded-full bg-primary text-primary-foreground"><Plus /></span><span className="mt-3 block text-sm font-semibold">Nova história</span></span></div></button>
-        {people.map((person, index) => <button key={person.handle} onClick={() => onStory(index)} className="group relative aspect-[3/5] overflow-hidden rounded-md bg-card text-left"><img src={person.image} alt={`História de ${person.name}`} className="size-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" width={1200} height={1504} /><span className="absolute inset-0 bg-story-overlay" /><span className="absolute left-3 top-3 rounded-full bg-background/70 p-[2px]"><Avatar person={person} size="sm" /></span><span className="absolute inset-x-3 bottom-4"><span className="block text-sm font-semibold">{person.name}</span><span className="text-xs text-foreground/70">Há {index + 1} h</span></span></button>)}
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="text-sm font-medium text-primary">Últimas 24 horas</p><h1 className="mt-2 truncate font-display text-3xl font-semibold sm:text-4xl">Histórias</h1></div><Button variant="ghost" className="h-10 rounded-full border border-primary/50 bg-transparent px-5 text-primary hover:bg-primary/10 hover:text-primary" onClick={onCreate}><CirclePlus /> Adicionar</Button></header>
+      <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+        <button onClick={onCreate} className="group relative aspect-[3/5] overflow-hidden rounded-2xl border border-dashed border-muted-foreground bg-secondary"><div className="absolute inset-0 grid place-items-center"><span className="text-center"><span className="mx-auto grid size-12 place-items-center rounded-full bg-primary text-primary-foreground"><Plus /></span><span className="mt-3 block text-sm font-semibold">Nova história</span></span></div></button>
+        {people.map((person, index) => <button key={person.handle} onClick={() => onStory(index)} className="group relative aspect-[3/5] overflow-hidden rounded-2xl bg-card text-left"><img src={person.image} alt={`História de ${person.name}`} className="size-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" width={1200} height={1504} /><span className="absolute inset-0 bg-story-overlay" /><span className="absolute left-3 top-3 rounded-full bg-background/70 p-[2px]"><Avatar person={person} size="sm" /></span><span className="absolute inset-x-3 bottom-4"><span className="block text-sm font-semibold">{person.name}</span><span className="text-xs text-foreground/70">Há {index + 1} h</span></span></button>)}
       </div>
     </div>
   );
@@ -404,13 +431,13 @@ function Profile({ onPost }: { onPost: (post: (typeof posts)[number]) => void })
       <section className="relative px-4 sm:px-8">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="-mt-12 min-w-0 sm:-mt-16"><span className="inline-block rounded-full border-4 border-background"><Avatar person={amara} size="lg" /></span><h1 className="mt-3 truncate font-display text-2xl font-semibold">Amara Costa</h1><p className="text-sm text-muted-foreground">@amaracosta</p></div>
-          <div className="flex gap-2 pt-3"><Button variant="outline" size="icon" aria-label="Compartilhar perfil"><Share2 /></Button><Button>Editar perfil</Button></div>
+          <div className="pt-4"><Button variant="ghost" className="h-10 rounded-full border border-border bg-transparent px-5 hover:bg-accent">Editar perfil</Button></div>
         </div>
-        <p className="mt-5 max-w-xl text-sm leading-6 text-foreground/80">Direção criativa, imagem e ideias em movimento. Luanda, Angola.</p>
-        <div className="mt-5 flex gap-6 text-sm"><p><strong>482</strong> <span className="text-muted-foreground">a seguir</span></p><p><strong>18,4 mil</strong> <span className="text-muted-foreground">seguidores</span></p></div>
-        <div className="mt-8 flex border-b border-border"><button className="border-b-2 border-primary px-4 py-3 text-sm font-semibold">Publicações</button><button className="px-4 py-3 text-sm text-muted-foreground">Guardados</button></div>
+        <p className="mt-6 max-w-xl text-[15px] leading-7 text-foreground/80">Direção criativa, imagem e ideias em movimento. Luanda, Angola.</p>
+        <div className="mt-6 flex gap-8 text-sm"><p><strong>482</strong> <span className="text-muted-foreground">a seguir</span></p><p><strong>18,4 mil</strong> <span className="text-muted-foreground">seguidores</span></p></div>
+        <div className="mt-10 flex border-b border-border"><button className="border-b-2 border-primary px-1 py-3 text-sm font-semibold">Publicações</button></div>
       </section>
-      <div className="grid grid-cols-3 gap-0.5 bg-background p-0.5 sm:gap-1 sm:p-1">{[...posts, ...posts].map((post, index) => <button key={`${post.id}-${index}`} onClick={() => onPost(post)} className="group relative aspect-square overflow-hidden bg-secondary"><img src={post.image} alt="Conteúdo do perfil" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" width={1200} height={1504} />{index === 1 && <span className="absolute right-2 top-2"><Play className="size-4 fill-current" /></span>}<span className="absolute inset-0 grid place-items-center bg-background/60 opacity-0 transition-opacity group-hover:opacity-100"><span className="flex items-center gap-1 text-sm font-semibold"><Heart className="size-4 fill-current" /> {post.likes}</span></span></button>)}</div>
+      <div className="grid grid-cols-3 gap-1.5 px-4 pb-8 pt-5 sm:gap-3 sm:px-8">{[...posts, ...posts].map((post, index) => <button key={`${post.id}-${index}`} onClick={() => onPost(post)} className="group relative aspect-square overflow-hidden rounded-lg bg-secondary sm:rounded-2xl"><img src={post.image} alt="Conteúdo do perfil" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" width={1200} height={1504} />{index === 1 && <span className="absolute right-2 top-2"><Play className="size-4 fill-current" /></span>}<span className="absolute inset-0 grid place-items-center bg-background/60 opacity-0 transition-opacity group-hover:opacity-100"><span className="flex items-center gap-1 text-sm font-semibold"><Heart className="size-4 fill-current" /> {post.likes}</span></span></button>)}</div>
     </div>
   );
 }
@@ -436,5 +463,5 @@ function Composer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: 
 }
 
 function PostDetail({ post, onClose }: { post: (typeof posts)[number] | null; onClose: () => void }) {
-  return <Dialog open={Boolean(post)} onOpenChange={(open) => { if (!open) onClose(); }}>{post && <DialogContent className="max-h-[92dvh] max-w-5xl overflow-y-auto p-0"><DialogTitle className="sr-only">Publicação de {post.author.name}</DialogTitle><div className="grid md:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]"><img src={post.image} alt="Publicação ampliada" className="max-h-[78dvh] size-full object-cover" width={1200} height={1504} /><div className="p-5"><div className="flex items-center gap-3"><Avatar person={post.author} size="sm" /><div><p className="text-sm font-semibold">{post.author.name}</p><p className="text-xs text-muted-foreground">{post.author.handle}</p></div></div><p className="mt-6 text-sm leading-6">{post.caption}</p><div className="mt-8 border-y border-border py-4 text-sm text-muted-foreground">{post.likes.toLocaleString("pt-PT")} gostos · {post.comments} comentários</div><div className="mt-5 flex gap-2"><IconButton label="Curtir"><Heart /></IconButton><IconButton label="Comentar"><MessageCircle /></IconButton><IconButton label="Compartilhar"><Share2 /></IconButton></div><div className="mt-6 space-y-4"><p className="text-xs font-semibold uppercase text-muted-foreground">Comentários</p><p className="text-sm"><strong className="mr-2">@joelmota</strong>A luz ficou incrível.</p><p className="text-sm"><strong className="mr-2">@linasousa</strong>Que série bonita!</p></div></div></div></DialogContent>}</Dialog>;
+  return <Dialog open={Boolean(post)} onOpenChange={(open) => { if (!open) onClose(); }}>{post && <DialogContent className="max-h-[92dvh] max-w-5xl overflow-y-auto p-0"><DialogTitle className="sr-only">Publicação de {post.author.name}</DialogTitle><div className="grid md:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]"><img src={post.image} alt="Publicação ampliada" className="max-h-[78dvh] size-full object-cover" width={1200} height={1504} /><div className="p-5"><div className="flex items-center gap-3"><Avatar person={post.author} size="sm" /><div><p className="text-sm font-semibold">{post.author.name}</p><p className="text-xs text-muted-foreground">{post.author.handle}</p></div></div><p className="mt-6 text-sm leading-6">{post.caption}</p><div className="mt-8 border-y border-border py-4 text-sm text-muted-foreground">{post.likes.toLocaleString("pt-PT")} gostos · {post.comments} comentários</div><div className="mt-5 flex gap-2"><IconButton label="Curtir"><Heart /></IconButton><IconButton label="Comentar"><MessageCircle /></IconButton></div><div className="mt-6 space-y-4"><p className="text-sm font-semibold">Comentários</p><p className="text-sm"><strong className="mr-2">@joelmota</strong>A luz ficou incrível.</p><p className="text-sm"><strong className="mr-2">@linasousa</strong>Que série bonita!</p></div></div></div></DialogContent>}</Dialog>;
 }
