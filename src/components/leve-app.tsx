@@ -68,6 +68,7 @@ const posts = [
     comments: 94,
     views: 12900,
     time: "Há 2 h",
+    duration: "0:11",
   },
   {
     id: 3,
@@ -284,7 +285,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </main>
 
-      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-background/25 backdrop-blur-2xl lg:hidden">
+      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-background/30 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
         <div className="mx-auto grid h-16 max-w-md grid-cols-4">
           {nav.map((item) => {
             const Icon = item.icon;
@@ -298,7 +299,6 @@ export function LeveApp({ section }: { section: Section }) {
               >
                 <Icon className="size-[26px]" active={selected} />
                 {item.key === "messages" && <span className="absolute right-1/2 top-3 size-1.5 translate-x-4 rounded-full bg-primary" />}
-                {selected && <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />}
               </Link>
             );
           })}
@@ -307,6 +307,17 @@ export function LeveApp({ section }: { section: Section }) {
 
 
 
+
+      {section === "feed" && (
+        <button
+          type="button"
+          onClick={() => setComposerOpen(true)}
+          aria-label="Criar publicação"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-40 grid size-14 place-items-center rounded-full border border-primary/50 bg-background/30 text-primary shadow-lg backdrop-blur-md transition-colors hover:bg-primary/10 lg:hidden"
+        >
+          <PenLine className="size-6" />
+        </button>
+      )}
 
       {notice && (
         <div className="fixed right-4 top-16 z-50 w-[min(340px,calc(100vw-2rem))] rounded-md border border-border bg-popover p-4 shadow-2xl lg:right-8 lg:top-6">
@@ -326,7 +337,7 @@ function Feed({ onStory, onPost, notice, setNotice, guest, onLogin }: { onStory:
   const filtered = posts.filter((post) => `${post.author.name} ${post.caption}`.toLowerCase().includes(query.toLowerCase()));
   return (
     <div className="grid xl:grid-cols-[minmax(0,680px)_340px]">
-      <section className="min-w-0">
+      <section className="min-w-0 lg:mx-auto lg:w-full lg:max-w-[680px] lg:border-x lg:border-border/50 xl:mx-0 xl:border-l-0">
         <div className="sticky top-16 z-20 bg-background/85 px-4 py-4 backdrop-blur-xl sm:px-6 lg:top-0 lg:py-5">
           <div className="flex items-center gap-3">
             <label className="flex min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-transparent px-5 transition-colors focus-within:border-primary/50">
@@ -346,7 +357,7 @@ function Feed({ onStory, onPost, notice, setNotice, guest, onLogin }: { onStory:
           </div>
         </div>
         <StoryStrip onStory={onStory} />
-        <div className="space-y-5 px-4 pb-10 sm:px-6">
+        <div className="border-t border-border/60">
           {filtered.length ? filtered.map((post) => <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />) : <div className="grid min-h-72 place-items-center text-sm text-muted-foreground">Nenhuma publicação encontrada.</div>}
         </div>
       </section>
@@ -380,33 +391,43 @@ function PostCard({ post, onOpen }: { post: (typeof posts)[number]; onOpen: () =
   const formatCount = (value: number) =>
     value >= 1000 ? `${(value / 1000).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} mil` : `${value}`;
   return (
-    <article className="rounded-3xl border border-border/60 bg-card/40 p-5 sm:p-6">
-      <div className="flex items-center gap-3.5">
+    <article className="flex gap-3.5 border-b border-border/60 px-4 py-5 sm:px-6">
+      <div className="shrink-0">
         <Avatar person={post.author} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-bold leading-5">{post.author.name}</p>
-          <p className="mt-0.5 truncate text-[13px] leading-5 text-muted-foreground">{post.author.handle} · {post.time}</p>
-        </div>
-        <Button variant="ghost" size="sm" className={`h-9 shrink-0 rounded-full border px-4 ${following ? "border-transparent text-muted-foreground" : "border-border"}`} onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
-        <IconButton label="Mais opções"><MoreHorizontal /></IconButton>
       </div>
-      <p className="mt-4 text-[15px] leading-7">{post.caption}</p>
-      <button onClick={onOpen} className="mt-4 block w-full overflow-hidden rounded-2xl border border-border/60 bg-secondary text-left">
-        <img src={post.image} alt="Publicação editorial" className="aspect-[4/5] w-full object-cover transition-transform duration-700 hover:scale-[1.01] sm:aspect-[5/4]" loading="lazy" width={1200} height={1504} />
-      </button>
-      <div className="mt-4 flex items-center gap-7 text-muted-foreground">
-        <button onClick={onOpen} aria-label="Comentários" className="flex items-center gap-2 transition-colors hover:text-foreground">
-          <MessageCircle className="size-[18px]" strokeWidth={1.7} />
-          <span className="text-[13px] font-medium">{formatCount(post.comments)}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-bold leading-5">{post.author.name}</p>
+            <p className="mt-0.5 truncate text-[13px] leading-5 text-muted-foreground">{post.author.handle} · {post.time}</p>
+          </div>
+          <Button variant="ghost" size="sm" className={`h-8 shrink-0 rounded-full border px-3.5 ${following ? "border-transparent text-muted-foreground" : "border-border"}`} onClick={() => setFollowing(!following)}>{following ? "A seguir" : "Seguir"}</Button>
+          <IconButton label="Mais opções"><MoreHorizontal /></IconButton>
+        </div>
+        <p className="mt-2.5 text-[15px] leading-6">{post.caption}</p>
+        <button onClick={onOpen} className="relative mt-3.5 block w-full overflow-hidden rounded-2xl border border-border/60 bg-secondary text-left">
+          <img src={post.image} alt="Publicação editorial" className="aspect-[4/5] w-full object-cover transition-transform duration-700 hover:scale-[1.01] sm:aspect-[5/4]" loading="lazy" width={1200} height={1504} />
+          {post.duration && (
+            <>
+              <span className="absolute left-1/2 top-1/2 grid size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm"><Play className="ml-0.5 size-6 fill-current" /></span>
+              <span className="absolute bottom-3 left-3 rounded-md bg-black/65 px-2 py-0.5 text-xs font-medium text-white">{post.duration}</span>
+            </>
+          )}
         </button>
-        <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-2 transition-colors ${liked ? "text-primary" : "hover:text-foreground"}`}>
-          <Heart className="size-[18px]" strokeWidth={1.7} fill={liked ? "currentColor" : "none"} />
-          <span className="text-[13px] font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
-        </button>
-        <span className="ml-auto flex items-center gap-2">
-          <Eye className="size-[18px]" strokeWidth={1.7} />
-          <span className="text-[13px] font-medium">{formatCount(post.views)}</span>
-        </span>
+        <div className="mt-3 flex items-center justify-between text-muted-foreground">
+          <button onClick={onOpen} aria-label="Comentários" className="flex items-center gap-2 transition-colors hover:text-foreground">
+            <MessageCircle className="size-5" strokeWidth={1.6} />
+            <span className="text-[13px] font-medium">{formatCount(post.comments)}</span>
+          </button>
+          <button onClick={() => setLiked(!liked)} aria-label="Curtir" className={`flex items-center gap-2 transition-colors ${liked ? "text-primary" : "hover:text-foreground"}`}>
+            <Heart className="size-5" strokeWidth={1.6} fill={liked ? "currentColor" : "none"} />
+            <span className="text-[13px] font-medium">{formatCount(post.likes + (liked ? 1 : 0))}</span>
+          </button>
+          <span className="flex items-center gap-2">
+            <Eye className="size-5" strokeWidth={1.6} />
+            <span className="text-[13px] font-medium">{formatCount(post.views)}</span>
+          </span>
+        </div>
       </div>
     </article>
   );
