@@ -1,8 +1,7 @@
-import { Bookmark, Grid3x3, Share2 } from "lucide-react";
+import { Bookmark, Grid3x3, Heart, Images, MessageCircle, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PostCard } from "./feed";
 import { me, profileCover, profilePosts, type Post } from "./data";
 import { Avatar, IconButton, formatCount } from "./primitives";
 
@@ -90,11 +89,7 @@ export function Profile({ onPost }: { onPost: (post: Post) => void }) {
       </section>
 
       {tab === "posts" ? (
-        <div className="mt-5 space-y-5 px-4 sm:px-8">
-          {profilePosts.map((post) => (
-            <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />
-          ))}
-        </div>
+        <ProfilePostGrid posts={profilePosts} onOpen={onPost} />
       ) : (
         <div className="mx-4 mt-6 grid min-h-56 place-items-center rounded-3xl border border-dashed border-border text-center sm:mx-8">
           <div className="px-6">
@@ -106,6 +101,60 @@ export function Profile({ onPost }: { onPost: (post: Post) => void }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Grelha de miniaturas quadradas do perfil, com contagens sobrepostas — como no Publicações. */
+function ProfilePostGrid({ posts, onOpen }: { posts: Post[]; onOpen: (post: Post) => void }) {
+  return (
+    <div className="mt-5 grid grid-cols-3 gap-0.5 px-0.5 sm:gap-1 sm:px-1">
+      {posts.map((post) => {
+        const isVideo = post.id % 2 === 0;
+        const isMulti = !isVideo && post.id % 3 === 0;
+        const duration = 18 + (post.id % 40);
+
+        return (
+          <button
+            key={post.id}
+            type="button"
+            onClick={() => onOpen(post)}
+            className="group relative aspect-square overflow-hidden bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          >
+            <img
+              src={post.image}
+              alt={post.caption}
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              width={400}
+              height={400}
+            />
+
+            {(isVideo || isMulti) && (
+              <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                {isVideo ? (
+                  <>
+                    <Video className="size-3" strokeWidth={2.2} />
+                    {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, "0")}
+                  </>
+                ) : (
+                  <Images className="size-3.5" strokeWidth={2.2} />
+                )}
+              </span>
+            )}
+
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/75 via-black/15 to-transparent px-2 pb-1.5 pt-6 text-[11px] font-semibold text-white">
+              <span className="flex items-center gap-1">
+                <Heart className="size-3.5 fill-current" strokeWidth={0} />
+                {formatCount(post.likes)}
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="size-3.5" strokeWidth={2.2} />
+                {formatCount(post.comments)}
+              </span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

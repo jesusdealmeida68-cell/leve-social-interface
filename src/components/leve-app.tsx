@@ -22,10 +22,7 @@ export function LeveApp({ section }: { section: Section }) {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <Sidebar section={section} onCreate={() => setComposer("post")} />
-      <MobileHeader
-        onNotifications={() => setNotificationsOpen((value) => !value)}
-        notificationsOpen={notificationsOpen}
-      />
+      <MobileHeader />
 
       <main className="pb-20 lg:ml-[248px] lg:pb-0">
         {section === "feed" && (
@@ -39,7 +36,12 @@ export function LeveApp({ section }: { section: Section }) {
         {section === "profile" && <Profile onPost={setOpenPost} />}
       </main>
 
-      <MobileTabBar section={section} onCreate={() => setComposer("post")} />
+      <MobileTabBar
+        section={section}
+        onCreate={() => setComposer("post")}
+        onNotifications={() => setNotificationsOpen((value) => !value)}
+        notificationsOpen={notificationsOpen}
+      />
 
       <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       <Composer mode={composer} onClose={() => setComposer(null)} />

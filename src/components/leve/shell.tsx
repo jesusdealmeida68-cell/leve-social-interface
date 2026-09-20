@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {
   Bell,
-  Film,
   Home,
   MessagesSquare,
   MoreHorizontal,
@@ -91,13 +90,7 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
 }
 
 /** Cabeçalho do telemóvel: logotipo, navegação e ações, tudo fixo no topo. */
-export function MobileHeader({
-  onNotifications,
-  notificationsOpen,
-}: {
-  onNotifications: () => void;
-  notificationsOpen: boolean;
-}) {
+export function MobileHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">
       <div className="flex h-14 items-center justify-between px-4">
@@ -107,14 +100,9 @@ export function MobileHeader({
         >
           <Logo />
         </Link>
-        <div className="flex items-center gap-1">
-          <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
-            <Link to="/entrar">Entrar</Link>
-          </Button>
-          <IconButton label="Notificações" active={notificationsOpen} onClick={onNotifications}>
-            <Bell className="size-[22px]" />
-          </IconButton>
-        </div>
+        <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
+          <Link to="/entrar">Entrar</Link>
+        </Button>
       </div>
     </header>
   );
@@ -124,9 +112,13 @@ export function MobileHeader({
 export function MobileTabBar({
   section,
   onCreate,
+  onNotifications,
+  notificationsOpen,
 }: {
   section: Section;
   onCreate: () => void;
+  onNotifications: () => void;
+  notificationsOpen: boolean;
 }) {
   return (
     <nav
@@ -154,8 +146,8 @@ export function MobileTabBar({
           <Plus className="size-[26px]" strokeWidth={2.4} />
         </button>
 
-        <TabLink to="#" label="Stories" selected={false} disabled>
-          <Film className="size-[22px]" strokeWidth={1.8} />
+        <TabLink label="Notificações" selected={notificationsOpen} onClick={onNotifications}>
+          <Bell className="size-[22px]" strokeWidth={notificationsOpen ? 2.4 : 1.8} />
         </TabLink>
 
         <TabLink to="/perfil" label="Perfil" selected={section === "profile"}>
@@ -178,14 +170,14 @@ function TabLink({
   label,
   selected,
   badge = false,
-  disabled = false,
+  onClick,
   children,
 }: {
-  to: string;
+  to?: string;
   label: string;
   selected: boolean;
   badge?: boolean;
-  disabled?: boolean;
+  onClick?: () => void;
   children: ReactNode;
 }) {
   const content = (
@@ -203,12 +195,11 @@ function TabLink({
   const className = cn(
     "flex min-w-14 flex-1 flex-col items-center gap-1 rounded-2xl py-1.5 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     selected && "text-primary",
-    disabled && "opacity-70",
   );
 
-  if (disabled) {
+  if (!to) {
     return (
-      <button type="button" aria-label={label} className={className}>
+      <button type="button" aria-label={label} onClick={onClick} className={className}>
         {content}
       </button>
     );
