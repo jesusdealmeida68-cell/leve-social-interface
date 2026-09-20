@@ -181,7 +181,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 pl-20 pr-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 grid h-16 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background/90 px-4 backdrop-blur-xl lg:hidden">
         <Logo />
         <span className="text-sm font-semibold">{nav.find((item) => item.key === section)?.label}</span>
         <div className="justify-self-end">
@@ -189,7 +189,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </header>
 
-      <main className="pl-16 lg:ml-[248px] lg:pl-0">
+      <main className="pb-20 lg:ml-[248px] lg:pb-0">
         <div className={`mx-auto min-h-dvh ${section === "messages" ? "max-w-[1180px]" : "max-w-[1120px]"}`}>
           {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} />}
           {section === "messages" && <Messages />}
