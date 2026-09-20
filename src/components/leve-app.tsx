@@ -344,7 +344,7 @@ function Conversation({ person, visible, onBack }: { person: (typeof conversatio
   const send = (event: FormEvent) => { event.preventDefault(); if (!draft.trim()) return; setMessages((items) => [...items, draft.trim()]); setDraft(""); };
   return (
     <section className={`${visible ? "flex" : "hidden md:flex"} fixed inset-0 z-50 flex-col bg-background md:static md:z-auto`}>
-      <header className="grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4">
+      <header className="grid h-16 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4">
         <div className="md:hidden"><IconButton label="Voltar" onClick={onBack}><ArrowLeft /></IconButton></div><Avatar person={person} size="sm" /><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-online">Online agora</p></div><IconButton label="Opções da conversa"><MoreHorizontal /></IconButton>
       </header>
       <div className="flex flex-1 flex-col justify-end overflow-y-auto p-4 sm:p-8">
@@ -372,7 +372,7 @@ function Profile({ onPost }: { onPost: (post: (typeof posts)[number]) => void })
   return (
     <div>
       <div className="relative h-44 overflow-hidden sm:h-64"><img src={editorialThree} alt="Costa de Luanda" className="size-full object-cover" width={1200} height={1504} /><div className="absolute inset-0 bg-cover-overlay" /></div>
-      <section className="px-4 sm:px-8">
+      <section className="relative px-4 sm:px-8">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="-mt-12 min-w-0 sm:-mt-16"><span className="inline-block rounded-full border-4 border-background"><Avatar person={amara} size="lg" /></span><h1 className="mt-3 truncate font-display text-2xl font-semibold">Amara Costa</h1><p className="text-sm text-muted-foreground">@amaracosta</p></div>
           <div className="flex gap-2 pt-3"><Button variant="outline" size="icon" aria-label="Compartilhar perfil"><Share2 /></Button><Button>Editar perfil</Button></div>

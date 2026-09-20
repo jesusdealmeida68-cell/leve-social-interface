@@ -4,4 +4,4 @@
 - [x] Build Messages experience
 - [x] Build Stories viewer and creator
 - [x] Build Profile grid and detail view
-- [ ] Validate mobile and desktop layouts
+- [x] Validate mobile and desktop layouts
