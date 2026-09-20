@@ -188,7 +188,7 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </header>
 
-      <main className="pb-24 lg:ml-[248px] lg:pb-0">
+      <main className="pl-16 lg:ml-[248px] lg:pl-0">
         <div className={`mx-auto min-h-dvh ${section === "messages" ? "max-w-[1180px]" : "max-w-[1120px]"}`}>
           {section === "feed" && <Feed onStory={setStoryIndex} onPost={setPostOpen} notice={notice} setNotice={setNotice} />}
           {section === "messages" && <Messages />}
@@ -197,18 +197,6 @@ export function LeveApp({ section }: { section: Section }) {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[72px] grid-cols-4 border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" aria-label="Navegação móvel">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const selected = item.key === section;
-          return (
-            <Link key={item.key} to={item.path} className={`flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-medium ${selected ? "text-primary" : "text-muted-foreground"}`}>
-              <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
 
       {notice && (
         <div className="fixed right-4 top-16 z-50 w-[min(340px,calc(100vw-2rem))] rounded-md border border-border bg-popover p-4 shadow-2xl lg:right-8 lg:top-6">
