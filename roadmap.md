@@ -1,7 +1,7 @@
 # LEVE prototype
-- [ ] Build shared responsive social layout
-- [ ] Build Feed and story interactions
-- [ ] Build Messages experience
-- [ ] Build Stories viewer and creator
-- [ ] Build Profile grid and detail view
+- [x] Build shared responsive social layout
+- [x] Build Feed and story interactions
+- [x] Build Messages experience
+- [x] Build Stories viewer and creator
+- [x] Build Profile grid and detail view
 - [ ] Validate mobile and desktop layouts
