@@ -62,6 +62,7 @@ const posts = [
     caption: "Entre linhas, luz e silêncio. Uma tarde a criar sem pressa.",
     likes: 2480,
     comments: 128,
+    views: 18400,
     time: "Há 18 min",
   },
   {
@@ -71,6 +72,7 @@ const posts = [
     caption: "O processo também merece ser visto. Novas ideias a ganhar forma no estúdio.",
     likes: 1870,
     comments: 94,
+    views: 12900,
     time: "Há 2 h",
   },
   {
@@ -80,6 +82,7 @@ const posts = [
     caption: "Luanda desacelera quando o Atlântico encontra o fim do dia.",
     likes: 4210,
     comments: 207,
+    views: 56800,
     time: "Ontem",
   },
 ];
