@@ -2,7 +2,7 @@ import editorialOne from "@/assets/leve-editorial-1.jpg";
 import editorialTwo from "@/assets/leve-editorial-2.jpg";
 import editorialThree from "@/assets/leve-editorial-3.jpg";
 
-export type Section = "feed" | "messages" | "stories" | "profile";
+export type Section = "feed" | "messages" | "profile";
 
 export type Person = { name: string; handle: string; image?: string };
 
@@ -35,9 +35,6 @@ export const equipa: Person = { name: "Equipa LEVE", handle: "@equipaleve" };
 
 /** A pessoa que está a usar o protótipo. */
 export const me = amara;
-
-/** Ordem usada nas histórias (a primeira é a do próprio utilizador). */
-export const storyPeople: Person[] = [amara, joel, lina];
 
 export const suggestions: Person[] = [joel, lina];
 

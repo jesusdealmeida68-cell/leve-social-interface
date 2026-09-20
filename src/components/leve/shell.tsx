@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
   Bell,
-  Film,
   Home,
   MessagesSquare,
   MoreHorizontal,
@@ -18,7 +17,6 @@ import { Avatar, IconButton, Logo } from "./primitives";
 export const nav = [
   { key: "feed", label: "Feed", path: "/", icon: Home },
   { key: "messages", label: "Mensagens", path: "/mensagens", icon: MessagesSquare },
-  { key: "stories", label: "História", path: "/historia", icon: Film },
   { key: "profile", label: "Perfil", path: "/perfil", icon: UserRound },
 ] as const;
 
@@ -85,44 +83,38 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
   );
 }
 
-/** Cabeçalho do telemóvel: logotipo à esquerda, ações à direita. */
+/** Cabeçalho do telemóvel: logotipo, navegação e ações, tudo fixo no topo. */
 export function MobileHeader({
+  section,
   onCreate,
   onNotifications,
   notificationsOpen,
 }: {
+  section: Section;
   onCreate: () => void;
   onNotifications: () => void;
   notificationsOpen: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl lg:hidden">
-      <Link
-        to="/"
-        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Logo />
-      </Link>
-      <div className="-mr-2 flex items-center">
-        <IconButton label="Criar publicação" onClick={onCreate}>
-          <Plus className="size-[22px]" />
-        </IconButton>
-        <IconButton label="Notificações" active={notificationsOpen} onClick={onNotifications}>
-          <Bell className="size-[22px]" />
-        </IconButton>
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">
+      <div className="flex h-14 items-center justify-between px-4">
+        <Link
+          to="/"
+          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Logo />
+        </Link>
+        <div className="-mr-2 flex items-center">
+          <IconButton label="Criar publicação" onClick={onCreate}>
+            <Plus className="size-[22px]" />
+          </IconButton>
+          <IconButton label="Notificações" active={notificationsOpen} onClick={onNotifications}>
+            <Bell className="size-[22px]" />
+          </IconButton>
+        </div>
       </div>
-    </header>
-  );
-}
 
-/** Barra inferior flutuante: compacta, com o item ativo em destaque e etiqueta. */
-export function BottomDock({ section }: { section: Section }) {
-  return (
-    <nav
-      aria-label="Navegação principal"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
-    >
-      <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border bg-popover/85 p-1.5 shadow-dock backdrop-blur-xl">
+      <nav aria-label="Navegação principal" className="flex items-center gap-1 px-3 pb-2">
         {nav.map((item) => {
           const Icon = item.icon;
           const selected = item.key === section;
@@ -133,22 +125,22 @@ export function BottomDock({ section }: { section: Section }) {
               aria-label={item.label}
               aria-current={selected ? "page" : undefined}
               className={cn(
-                "relative flex h-12 items-center justify-center gap-2 rounded-full text-sm font-bold transition-[background-color,color,padding] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 selected
-                  ? "bg-primary px-5 text-primary-foreground"
-                  : "w-12 text-muted-foreground hover:text-foreground",
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="size-[22px]" strokeWidth={selected ? 2.3 : 1.8} />
-              {selected && <span>{item.label}</span>}
+              <Icon className="size-[18px]" strokeWidth={selected ? 2.3 : 1.8} />
+              <span>{item.label}</span>
               {item.key === "messages" && !selected && (
-                <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary ring-2 ring-popover" />
+                <span className="absolute right-5 top-1.5 size-2 rounded-full bg-primary ring-2 ring-background" />
               )}
             </Link>
           );
         })}
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
 

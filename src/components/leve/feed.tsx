@@ -1,28 +1,15 @@
-import {
-  Bell,
-  Bookmark,
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Share2,
-} from "lucide-react";
+import { Bell, Bookmark, Heart, MessageCircle, MoreHorizontal, Search, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { me, posts, storyPeople, suggestions, trending, type Post } from "./data";
+import { me, posts, suggestions, trending, type Post } from "./data";
 import { ActionButton, Avatar, IconButton, formatCount } from "./primitives";
 
 export function Feed({
-  onStory,
   onPost,
-  onCreate,
   notificationsOpen,
   onNotifications,
 }: {
-  onStory: (index: number) => void;
   onPost: (post: Post) => void;
-  onCreate: () => void;
   notificationsOpen: boolean;
   onNotifications: () => void;
 }) {
@@ -58,9 +45,7 @@ export function Feed({
           </div>
         </div>
 
-        <StoryStrip onStory={onStory} onCreate={onCreate} />
-
-        <div className="space-y-4 px-4 pb-8 pt-2">
+        <div className="space-y-5 px-4 pb-10 pt-4">
           {filtered.length ? (
             filtered.map((post) => (
               <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />
@@ -83,53 +68,6 @@ export function Feed({
   );
 }
 
-function StoryStrip({
-  onStory,
-  onCreate,
-}: {
-  onStory: (index: number) => void;
-  onCreate: () => void;
-}) {
-  return (
-    <div className="scrollbar-none flex gap-4 overflow-x-auto px-4 py-3">
-      <button
-        type="button"
-        onClick={onCreate}
-        className="group shrink-0 rounded-2xl text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <span className="relative block rounded-full border border-dashed border-muted-foreground/60 p-[5px] transition-colors group-hover:border-primary">
-          <Avatar person={me} size="xl" />
-          <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground">
-            <Plus className="size-3.5" strokeWidth={3} />
-          </span>
-        </span>
-        <span className="mt-1.5 block text-xs text-muted-foreground">Sua história</span>
-      </button>
-
-      {storyPeople
-        .map((person, index) => ({ person, index }))
-        .filter(({ person }) => person.handle !== me.handle)
-        .map(({ person, index }) => (
-          <button
-            key={person.handle}
-            type="button"
-            onClick={() => onStory(index)}
-            className="shrink-0 rounded-2xl text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span className="block rounded-full bg-story p-[2.5px]">
-              <span className="block rounded-full bg-background p-[2.5px]">
-                <Avatar person={person} size="xl" />
-              </span>
-            </span>
-            <span className="mt-1.5 block max-w-[74px] truncate text-xs font-medium">
-              {person.name.split(" ")[0]}
-            </span>
-          </button>
-        ))}
-    </div>
-  );
-}
-
 function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -137,8 +75,8 @@ function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const isMine = post.author.handle === me.handle;
 
   return (
-    <article className="rounded-[1.75rem] border border-border bg-card p-3 sm:p-4">
-      <header className="flex items-center gap-3 pb-3">
+    <article className="rounded-[1.75rem] border border-border bg-card p-4 shadow-sm sm:p-5">
+      <header className="flex items-center gap-3 pb-4">
         <Avatar person={post.author} size="md" />
         <div className="min-w-0 flex-1 leading-tight">
           <p className="truncate text-[15px] font-bold">{post.author.name}</p>
@@ -176,7 +114,7 @@ function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         />
       </button>
 
-      <div className="mt-2 flex items-center gap-0.5">
+      <div className="mt-3 flex items-center gap-0.5">
         <ActionButton
           label="Curtir"
           pressed={liked}
@@ -207,7 +145,7 @@ function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </ActionButton>
       </div>
 
-      <div className="px-1 pb-1">
+      <div className="mt-1 px-1 pb-1">
         <p className="text-sm leading-6">
           <strong className="mr-1.5 font-bold">{post.author.handle}</strong>
           {post.caption}
