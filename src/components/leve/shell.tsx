@@ -24,12 +24,17 @@ export const nav = [
 export function Sidebar({ section, onCreate }: { section: Section; onCreate: () => void }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border px-4 py-7 lg:flex">
-      <Link
-        to="/"
-        className="rounded-full px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Logo />
-      </Link>
+      <div className="flex items-center justify-between gap-2 px-3">
+        <Link
+          to="/"
+          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Logo />
+        </Link>
+        <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
+          <Link to="/entrar">Entrar</Link>
+        </Button>
+      </div>
 
       <nav className="mt-10 flex flex-col gap-1" aria-label="Navegação principal">
         {nav.map((item) => {
@@ -104,7 +109,10 @@ export function MobileHeader({
         >
           <Logo />
         </Link>
-        <div className="-mr-2 flex items-center">
+        <div className="flex items-center gap-1">
+          <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
+            <Link to="/entrar">Entrar</Link>
+          </Button>
           <IconButton label="Criar publicação" onClick={onCreate}>
             <Plus className="size-[22px]" />
           </IconButton>
