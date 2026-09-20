@@ -4,7 +4,7 @@ import { Feed } from "./leve/feed";
 import { Messages } from "./leve/messages";
 import { Composer, PostDetail, type ComposerMode } from "./leve/overlays";
 import { Profile } from "./leve/profile";
-import { MobileHeader, NotificationPanel, Sidebar } from "./leve/shell";
+import { MobileHeader, MobileTabBar, NotificationPanel, Sidebar } from "./leve/shell";
 import type { Post, Section } from "./leve/data";
 
 /** Estrutura comum do LEVE: navegação, área de conteúdo e as camadas (criar, detalhe). */
@@ -23,13 +23,11 @@ export function LeveApp({ section }: { section: Section }) {
     <div className="min-h-dvh bg-background text-foreground">
       <Sidebar section={section} onCreate={() => setComposer("post")} />
       <MobileHeader
-        section={section}
-        onCreate={() => setComposer("post")}
         onNotifications={() => setNotificationsOpen((value) => !value)}
         notificationsOpen={notificationsOpen}
       />
 
-      <main className="lg:ml-[248px]">
+      <main className="pb-20 lg:ml-[248px] lg:pb-0">
         {section === "feed" && (
           <Feed
             onPost={setOpenPost}
@@ -40,6 +38,8 @@ export function LeveApp({ section }: { section: Section }) {
         {section === "messages" && <Messages />}
         {section === "profile" && <Profile onPost={setOpenPost} />}
       </main>
+
+      <MobileTabBar section={section} onCreate={() => setComposer("post")} />
 
       <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       <Composer mode={composer} onClose={() => setComposer(null)} />

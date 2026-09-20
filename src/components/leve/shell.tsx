@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import {
   Bell,
+  Film,
   Home,
   MessagesSquare,
   MoreHorizontal,
@@ -90,13 +92,9 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
 
 /** Cabeçalho do telemóvel: logotipo, navegação e ações, tudo fixo no topo. */
 export function MobileHeader({
-  section,
-  onCreate,
   onNotifications,
   notificationsOpen,
 }: {
-  section: Section;
-  onCreate: () => void;
   onNotifications: () => void;
   notificationsOpen: boolean;
 }) {
@@ -113,42 +111,113 @@ export function MobileHeader({
           <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
             <Link to="/entrar">Entrar</Link>
           </Button>
-          <IconButton label="Criar publicação" onClick={onCreate}>
-            <Plus className="size-[22px]" />
-          </IconButton>
           <IconButton label="Notificações" active={notificationsOpen} onClick={onNotifications}>
             <Bell className="size-[22px]" />
           </IconButton>
         </div>
       </div>
-
-      <nav aria-label="Navegação principal" className="flex items-center gap-1 px-3 pb-2">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const selected = item.key === section;
-          return (
-            <Link
-              key={item.key}
-              to={item.path}
-              aria-label={item.label}
-              aria-current={selected ? "page" : undefined}
-              className={cn(
-                "relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                selected
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="size-[18px]" strokeWidth={selected ? 2.3 : 1.8} />
-              <span>{item.label}</span>
-              {item.key === "messages" && !selected && (
-                <span className="absolute right-5 top-1.5 size-2 rounded-full bg-primary ring-2 ring-background" />
-              )}
-            </Link>
-          );
-        })}
-      </nav>
     </header>
+  );
+}
+
+/** Barra de navegação fixa no fundo do ecrã, para telemóvel. */
+export function MobileTabBar({
+  section,
+  onCreate,
+}: {
+  section: Section;
+  onCreate: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Navegação principal"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/90 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur-xl lg:hidden"
+    >
+      <div className="mx-auto flex max-w-md items-center justify-between px-3">
+        <TabLink to="/" label="Início" selected={section === "feed"}>
+          <Home className="size-[22px]" strokeWidth={section === "feed" ? 2.4 : 1.8} />
+        </TabLink>
+
+        <TabLink to="/mensagens" label="Mensagens" selected={section === "messages"} badge>
+          <MessagesSquare
+            className="size-[22px]"
+            strokeWidth={section === "messages" ? 2.4 : 1.8}
+          />
+        </TabLink>
+
+        <button
+          type="button"
+          onClick={onCreate}
+          aria-label="Criar publicação"
+          className="-mt-6 grid size-14 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-dock transition-transform active:scale-90"
+        >
+          <Plus className="size-[26px]" strokeWidth={2.4} />
+        </button>
+
+        <TabLink to="#" label="Stories" selected={false} disabled>
+          <Film className="size-[22px]" strokeWidth={1.8} />
+        </TabLink>
+
+        <TabLink to="/perfil" label="Perfil" selected={section === "profile"}>
+          <Avatar
+            person={me}
+            size="sm"
+            className={cn(
+              "size-6 ring-2 ring-transparent transition-[box-shadow]",
+              section === "profile" && "ring-primary",
+            )}
+          />
+        </TabLink>
+      </div>
+    </nav>
+  );
+}
+
+function TabLink({
+  to,
+  label,
+  selected,
+  badge = false,
+  disabled = false,
+  children,
+}: {
+  to: string;
+  label: string;
+  selected: boolean;
+  badge?: boolean;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  const content = (
+    <>
+      <span className="relative flex items-center justify-center">
+        {children}
+        {badge && (
+          <span className="absolute -right-1.5 -top-1 size-2 rounded-full bg-primary ring-2 ring-background" />
+        )}
+      </span>
+      <span className="text-[11px] font-semibold leading-none">{label}</span>
+    </>
+  );
+
+  const className = cn(
+    "flex min-w-14 flex-1 flex-col items-center gap-1 rounded-2xl py-1.5 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    selected && "text-primary",
+    disabled && "opacity-70",
+  );
+
+  if (disabled) {
+    return (
+      <button type="button" aria-label={label} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link to={to} aria-label={label} aria-current={selected ? "page" : undefined} className={className}>
+      {content}
+    </Link>
   );
 }
 

@@ -17,9 +17,9 @@ const logoIconSizes = {
 } as const;
 
 const logoTextSizes = {
-  sm: "text-lg",
-  md: "text-[1.6rem]",
-  lg: "text-3xl",
+  sm: "text-xl",
+  md: "text-[1.75rem]",
+  lg: "text-4xl",
 } as const;
 
 export function Logo({
@@ -30,20 +30,15 @@ export function Logo({
   className?: string;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)} aria-label="LEVE">
+    <span className={cn("inline-flex items-center gap-1.5", className)} aria-label="LEVE">
       <img
         src={leveIcon}
         alt=""
         aria-hidden="true"
         className={cn(logoIconSizes[size], "shrink-0 object-contain")}
       />
-      <span
-        className={cn(
-          "font-display font-bold leading-none tracking-[0.08em]",
-          logoTextSizes[size],
-        )}
-      >
-        LEVE
+      <span className={cn("font-logo leading-none tracking-normal", logoTextSizes[size])}>
+        Leve
       </span>
     </span>
   );
