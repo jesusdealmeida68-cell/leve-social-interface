@@ -1,4 +1,4 @@
-import { Bookmark, Heart, ImagePlus, MessageCircle, Send, Share2 } from "lucide-react";
+import { Heart, ImagePlus, MessageCircle, Send } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,7 +136,6 @@ export function PostDetail({ post, onClose }: { post: Post | null; onClose: () =
 
 function PostDetailContent({ post }: { post: Post }) {
   const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [comment, setComment] = useState("");
   const [extra, setExtra] = useState<string[]>([]);
 
@@ -176,7 +175,7 @@ function PostDetailContent({ post }: { post: Post }) {
 
           <p className="mt-5 text-[15px] leading-6">{post.caption}</p>
 
-          <div className="-mx-1.5 mt-4 flex items-center gap-1">
+          <div className="mt-4 flex items-center gap-1 pl-1">
             <ActionButton
               label="Curtir"
               pressed={liked}
@@ -193,22 +192,6 @@ function PostDetailContent({ post }: { post: Post }) {
             </ActionButton>
             <ActionButton label="Comentários" count={formatCount(post.comments + extra.length)}>
               <MessageCircle className="size-[22px]" strokeWidth={1.8} />
-            </ActionButton>
-            <ActionButton label="Compartilhar">
-              <Share2 className="size-[22px]" strokeWidth={1.8} />
-            </ActionButton>
-            <span className="flex-1" />
-            <ActionButton
-              label="Guardar"
-              pressed={saved}
-              active={saved}
-              onClick={() => setSaved(!saved)}
-            >
-              <Bookmark
-                className="size-[22px]"
-                strokeWidth={1.8}
-                fill={saved ? "currentColor" : "none"}
-              />
             </ActionButton>
           </div>
 

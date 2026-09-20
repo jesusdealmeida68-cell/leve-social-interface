@@ -1,4 +1,4 @@
-import { Bell, Bookmark, Heart, MessageCircle, MoreHorizontal, Search, Share2 } from "lucide-react";
+import { Bell, Heart, MessageCircle, MoreHorizontal, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { me, posts, suggestions, trending, type Post } from "./data";
@@ -71,7 +71,6 @@ export function Feed({
 export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
-  const [saved, setSaved] = useState(false);
   const isMine = post.author.handle === me.handle;
 
   return (
@@ -114,7 +113,7 @@ export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         />
       </button>
 
-      <div className="-mx-1 mt-3 flex items-center gap-1">
+      <div className="mt-3 flex items-center gap-1 pl-1">
         <ActionButton
           label="Curtir"
           pressed={liked}
@@ -127,22 +126,6 @@ export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </ActionButton>
         <ActionButton label="Comentários" count={formatCount(post.comments)} onClick={onOpen}>
           <MessageCircle className="size-[22px]" strokeWidth={1.8} />
-        </ActionButton>
-        <ActionButton label="Compartilhar">
-          <Share2 className="size-[22px]" strokeWidth={1.8} />
-        </ActionButton>
-        <span className="flex-1" />
-        <ActionButton
-          label="Guardar"
-          pressed={saved}
-          active={saved}
-          onClick={() => setSaved(!saved)}
-        >
-          <Bookmark
-            className="size-[22px]"
-            strokeWidth={1.8}
-            fill={saved ? "currentColor" : "none"}
-          />
         </ActionButton>
       </div>
 
