@@ -68,7 +68,7 @@ export function Feed({
   );
 }
 
-function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
+export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [saved, setSaved] = useState(false);

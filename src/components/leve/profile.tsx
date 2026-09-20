@@ -1,7 +1,8 @@
-import { Bookmark, Grid3x3, Heart, Play, Share2 } from "lucide-react";
+import { Bookmark, Grid3x3, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PostCard } from "./feed";
 import { me, profileCover, profilePosts, type Post } from "./data";
 import { Avatar, IconButton, formatCount } from "./primitives";
 
@@ -89,39 +90,11 @@ export function Profile({ onPost }: { onPost: (post: Post) => void }) {
       </section>
 
       {tab === "posts" ? (
-        <ul className="mt-1 grid grid-cols-3 gap-1 px-1 sm:gap-2 sm:px-4 lg:grid-cols-4">
-          {profilePosts.map((post, index) => (
-            <li key={post.id}>
-              <button
-                type="button"
-                onClick={() => onPost(post)}
-                aria-label={`Abrir publicação: ${post.caption}`}
-                className="group relative block aspect-square w-full overflow-hidden rounded-lg bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:rounded-2xl"
-              >
-                <img
-                  src={post.image}
-                  alt=""
-                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  width={600}
-                  height={600}
-                />
-                {index % 5 === 1 && (
-                  <Play
-                    className="absolute right-2 top-2 size-4 fill-white text-white drop-shadow"
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="absolute inset-0 grid place-items-center bg-background/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-                  <span className="flex items-center gap-1.5 text-sm font-bold">
-                    <Heart className="size-4 fill-current" />
-                    {formatCount(post.likes)}
-                  </span>
-                </span>
-              </button>
-            </li>
+        <div className="mt-5 space-y-5 px-4 sm:px-8">
+          {profilePosts.map((post) => (
+            <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />
           ))}
-        </ul>
+        </div>
       ) : (
         <div className="mx-4 mt-6 grid min-h-56 place-items-center rounded-3xl border border-dashed border-border text-center sm:mx-8">
           <div className="px-6">
