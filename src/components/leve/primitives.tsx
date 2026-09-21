@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, MessageCircle, Play } from "lucide-react";
+import { Heart, Layers, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Post, Profile } from "@/lib/leve";
+import { postMedia, type Post, type Profile } from "@/lib/leve";
 import leveIcon from "@/assets/leve-icon.png";
 
 export function formatCount(value: number) {
@@ -196,7 +196,9 @@ export function ActionButton({
 
 /** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Abre sempre a mesma página de visualização. */
 export function PostThumb({ post }: { post: Post }) {
-  if (!post.media_url) return null;
+  const items = postMedia(post);
+  const cover = items[0];
+  if (!cover) return null;
 
   return (
     <Link
@@ -205,11 +207,11 @@ export function PostThumb({ post }: { post: Post }) {
       aria-label={`Abrir publicação: ${post.caption || "sem legenda"}`}
       className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {post.media_type === "video" ? (
-        <video src={post.media_url} muted playsInline className="size-full object-cover" />
+      {cover.type === "video" ? (
+        <video src={cover.url} muted playsInline className="size-full object-cover" />
       ) : (
         <img
-          src={post.media_url}
+          src={cover.url}
           alt=""
           className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
@@ -218,10 +220,18 @@ export function PostThumb({ post }: { post: Post }) {
         />
       )}
 
-      {post.media_type === "video" && (
+      {items.length > 1 ? (
         <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
-          <Play className="size-3 fill-current" aria-hidden="true" />
+          <Layers className="size-3" aria-hidden="true" />
+          {items.length}
+          <span className="sr-only"> fotos e vídeos</span>
         </span>
+      ) : (
+        cover.type === "video" && (
+          <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
+            <Play className="size-3 fill-current" aria-hidden="true" />
+          </span>
+        )
       )}
 
       <span

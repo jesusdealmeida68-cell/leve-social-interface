@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { getPost } from "@/lib/leve";
+import { getPost, postMedia } from "@/lib/leve";
 import { CommentsSection } from "./overlays";
 import { Avatar, Logo, PersonLink } from "./primitives";
-import { VideoPlayer } from "./video-player";
+import { PostGallery } from "./media-gallery";
 
 /** Página de abrir uma publicação (foto ou vídeo): a mesma página serve para os dois. Os comentários aparecem no fim. */
 export function Watch({ postId }: { postId: string }) {
@@ -37,22 +37,7 @@ export function Watch({ postId }: { postId: string }) {
       ) : (
         <>
           <article className="py-4">
-            {post.media_type === "video" && post.media_url ? (
-              <VideoPlayer
-                src={post.media_url}
-                label={`Vídeo de ${post.author.name}`}
-                className="aspect-[4/5] w-full"
-                autoPlayOnMount
-              />
-            ) : post.media_url ? (
-              <img
-                src={post.media_url}
-                alt={`Publicação de ${post.author.name}`}
-                className="aspect-[4/5] w-full object-cover"
-                width={1200}
-                height={1504}
-              />
-            ) : null}
+            <PostGallery items={postMedia(post)} label={`Publicação de ${post.author.name}`} />
             <div className="flex items-center gap-3 px-4 pt-3">
               <PersonLink person={post.author}>
                 <Avatar person={post.author} size="sm" />

@@ -1,6 +1,6 @@
-import { Heart, ImagePlus, MessageCircle, Send, Video as VideoIcon, X } from "lucide-react";
+import { Heart, ImagePlus, MessageCircle, Plus, Send, Video as VideoIcon, X } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   addComment,
   createPost,
   listComments,
+  MAX_POST_MEDIA,
   timeAgo,
   toggleLike,
   uploadMedia,
@@ -37,27 +38,35 @@ export function Composer({ mode, onClose }: { mode: ComposerMode; onClose: () =>
   );
 }
 
+type Picked = { id: string; file: File; url: string; kind: "image" | "video" };
+
 function ComposerBody({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<{ url: string; kind: "image" | "video" } | null>(null);
+  const [picked, setPicked] = useState<Picked[]>([]);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(0);
+
+  /* liberta as pré-visualizações ao fechar */
+  const pickedRef = useRef(picked);
+  pickedRef.current = picked;
+  useEffect(() => () => pickedRef.current.forEach((item) => URL.revokeObjectURL(item.url)), []);
 
   const publish = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Precisas de entrar para publicar.");
-      let mediaUrl: string | null = null;
-      let mediaType: "image" | "video" = "image";
-      if (file) {
-        const uploaded = await uploadMedia(file, user.id);
-        mediaUrl = uploaded.url;
-        mediaType = uploaded.type;
-      }
-      await createPost({ userId: user.id, caption, mediaUrl, mediaType });
+      setSent(0);
+      const media = await Promise.all(
+        picked.map(async ({ file }) => {
+          const uploaded = await uploadMedia(file, user.id);
+          setSent((count) => count + 1);
+          return uploaded;
+        }),
+      );
+      await createPost({ userId: user.id, caption, media });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -67,23 +76,38 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
     onError: (err) => setError(err instanceof Error ? err.message : "Algo correu mal."),
   });
 
-  const pick = (selected: File | null) => {
-    if (preview) URL.revokeObjectURL(preview.url);
-    if (!selected) {
-      setFile(null);
-      setPreview(null);
-      return;
-    }
-    const kind = selected.type.startsWith("video/") ? "video" : "image";
-    setFile(selected);
-    setPreview({ url: URL.createObjectURL(selected), kind });
+  const addFiles = (files: FileList | null) => {
+    if (!files) return;
+    setError(null);
+    const valid = Array.from(files).filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/"),
+    );
+    if (valid.length < files.length) setError("Só podes juntar fotos e vídeos.");
+    const room = MAX_POST_MEDIA - picked.length;
+    if (valid.length > room) setError(`Uma publicação pode ter até ${MAX_POST_MEDIA} ficheiros.`);
+    const added: Picked[] = valid.slice(0, Math.max(room, 0)).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      url: URL.createObjectURL(file),
+      kind: file.type.startsWith("video/") ? "video" : "image",
+    }));
+    setPicked((current) => [...current, ...added]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const remove = (id: string) => {
+    setPicked((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return current.filter((item) => item.id !== id);
+    });
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!file && !caption.trim()) {
-      setError("Adiciona uma foto, um vídeo ou escreve algo.");
+    if (picked.length === 0 && !caption.trim()) {
+      setError("Adiciona fotos, vídeos ou escreve algo.");
       return;
     }
     publish.mutate();
@@ -109,19 +133,22 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
     <form onSubmit={submit} className="p-5">
       <DialogHeader className="text-left">
         <DialogTitle className="font-display text-xl">Nova publicação</DialogTitle>
-        <DialogDescription>Uma foto ou vídeo, com legenda opcional.</DialogDescription>
+        <DialogDescription>
+          Junta várias fotos e vídeos na mesma publicação, com legenda opcional.
+        </DialogDescription>
       </DialogHeader>
 
       <input
         ref={inputRef}
         type="file"
         accept="image/*,video/*"
+        multiple
         className="hidden"
-        onChange={(event) => pick(event.target.files?.[0] ?? null)}
+        onChange={(event) => addFiles(event.target.files)}
       />
 
       <div className="mt-4">
-        {!preview ? (
+        {picked.length === 0 ? (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -130,35 +157,61 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
             <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
               <ImagePlus className="size-6" />
             </span>
-            <span className="text-sm font-semibold">Adicionar foto ou vídeo</span>
+            <span className="text-sm font-semibold">Adicionar fotos e vídeos</span>
+            <span className="text-xs">Até {MAX_POST_MEDIA} ficheiros, misturados se quiseres</span>
           </button>
         ) : (
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-secondary">
-            {preview.kind === "video" ? (
-              <video
-                src={preview.url}
-                muted
-                playsInline
-                controls
-                className="size-full object-cover"
-              />
-            ) : (
-              <img src={preview.url} alt="" className="size-full object-cover" />
-            )}
-            <button
-              type="button"
-              onClick={() => pick(null)}
-              aria-label="Remover"
-              className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/60 text-white transition-transform hover:bg-black/75 active:scale-90"
-            >
-              <X className="size-4" />
-            </button>
-            {preview.kind === "video" && (
-              <span className="absolute bottom-2 left-2 grid size-6 place-items-center rounded-full bg-black/60 text-white">
-                <VideoIcon className="size-3.5" />
-              </span>
-            )}
-          </div>
+          <>
+            <ul className="grid grid-cols-3 gap-2">
+              {picked.map((item, position) => (
+                <li
+                  key={item.id}
+                  className="relative aspect-square overflow-hidden rounded-xl bg-secondary"
+                >
+                  {item.kind === "video" ? (
+                    <video src={item.url} muted playsInline className="size-full object-cover" />
+                  ) : (
+                    <img src={item.url} alt="" className="size-full object-cover" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => remove(item.id)}
+                    disabled={publish.isPending}
+                    aria-label={`Remover ficheiro ${position + 1}`}
+                    className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-black/60 text-white transition-transform hover:bg-black/75 active:scale-90 disabled:opacity-50"
+                  >
+                    <X className="size-4" />
+                  </button>
+                  {item.kind === "video" && (
+                    <span className="absolute bottom-1.5 left-1.5 grid size-6 place-items-center rounded-full bg-black/60 text-white">
+                      <VideoIcon className="size-3.5" />
+                    </span>
+                  )}
+                  {position === 0 && picked.length > 1 && (
+                    <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      Capa
+                    </span>
+                  )}
+                </li>
+              ))}
+              {picked.length < MAX_POST_MEDIA && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={publish.isPending}
+                    aria-label="Adicionar mais fotos ou vídeos"
+                    className="grid aspect-square w-full place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  >
+                    <Plus className="size-6" />
+                  </button>
+                </li>
+              )}
+            </ul>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {picked.length} de {MAX_POST_MEDIA} ficheiros
+            </p>
+          </>
         )}
       </div>
 
@@ -175,7 +228,11 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Visível para todos</p>
         <Button type="submit" disabled={publish.isPending}>
-          {publish.isPending ? "A publicar..." : "Publicar"}
+          {publish.isPending
+            ? picked.length > 1
+              ? `A enviar ${sent}/${picked.length}...`
+              : "A publicar..."
+            : "Publicar"}
         </Button>
       </div>
     </form>

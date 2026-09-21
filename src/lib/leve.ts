@@ -25,6 +25,12 @@ export type Post = {
   likedByMe: boolean;
 };
 
+/** Um ficheiro de uma publicação: foto ou vídeo. */
+export type MediaItem = { url: string; type: "image" | "video" };
+
+/** Máximo de fotos/vídeos numa só publicação. */
+export const MAX_POST_MEDIA = 10;
+
 export type Comment = {
   id: string;
   text: string;
@@ -320,18 +326,48 @@ export async function getPost(postId: string, viewerId: string | null): Promise<
   return post ?? null;
 }
 
-export async function createPost(input: {
-  userId: string;
-  caption: string;
-  mediaUrl: string | null;
-  mediaType: "image" | "video";
-}) {
+/**
+ * Lê os ficheiros de uma publicação. As publicações antigas (e as de um só ficheiro) guardam
+ * apenas o endereço em `media_url`; as que têm vários ficheiros guardam ali uma lista em JSON.
+ */
+export function postMedia(post: Pick<Post, "media_url" | "media_type">): MediaItem[] {
+  const raw = post.media_url;
+  if (!raw) return [];
+  if (raw.startsWith("[")) {
+    try {
+      const list: unknown = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        return list.filter(
+          (item): item is MediaItem =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as MediaItem).url === "string" &&
+            ((item as MediaItem).type === "image" || (item as MediaItem).type === "video"),
+        );
+      }
+    } catch {
+      /* não é uma lista: trata como endereço simples */
+    }
+  }
+  return [{ url: raw, type: post.media_type === "video" ? "video" : "image" }];
+}
+
+/** Inverso de `postMedia`: um ficheiro fica como endereço simples, vários ficam como lista. */
+function encodeMedia(items: MediaItem[]): { url: string | null; type: "image" | "video" } {
+  const [first] = items;
+  if (!first) return { url: null, type: "image" };
+  if (items.length === 1) return { url: first.url, type: first.type };
+  return { url: JSON.stringify(items), type: first.type };
+}
+
+export async function createPost(input: { userId: string; caption: string; media: MediaItem[] }) {
+  const stored = encodeMedia(input.media.slice(0, MAX_POST_MEDIA));
   const { error } = await supabase.from("posts").insert({
     user_id: input.userId,
     caption: input.caption,
     tags: extractTags(input.caption),
-    media_url: input.mediaUrl,
-    media_type: input.mediaType,
+    media_url: stored.url,
+    media_type: stored.type,
   });
   if (error) throw error;
 }
