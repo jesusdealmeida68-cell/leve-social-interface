@@ -3,6 +3,7 @@ import {
   Ban,
   BadgeCheck,
   ChevronLeft,
+  Compass,
   Crown,
   Eye,
   ImagePlus,
@@ -15,6 +16,7 @@ import {
   Plus,
   Receipt,
   ShoppingBag,
+  Sparkles,
   Tag,
   TriangleAlert,
   Video,
@@ -40,13 +42,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { equipa, joel, lina, type Person } from "./data";
+import { Avatar, PersonLink } from "./primitives";
 
 /* ---------------------------------------------------------------------------
- * Página "Conteúdos pagos" — SÓ VISUAL.
- * Nada aqui fala com o backend: o estado "Verificado", os cartões de exemplo e
- * os botões de guardar/publicar são apenas desenho. Quando houver ligação real,
- * `previewItems` e o estado de verificação passam a vir da base de dados.
+ * Página "Conteúdo pago" — SÓ VISUAL.
+ * Nada aqui fala com o backend: os itens de exemplo (para explorar e os meus),
+ * o estado "Verificado" e os botões de comprar/guardar/publicar são apenas
+ * desenho. Quando houver ligação real, isto passa a vir da base de dados.
+ *
+ * A página tem duas áreas bem separadas, alternadas por abas:
+ * - "Explorar": conteúdo pago de outras pessoas, para descobrir e comprar.
+ * - "Os meus conteúdos": o que eu publiquei para venda, com o botão de criar.
  * ------------------------------------------------------------------------- */
+
+type View = "explore" | "mine";
 
 type Kind = "video" | "photo" | "collection";
 type Status = "published" | "draft" | "suspended";
@@ -60,6 +70,15 @@ type PaidItem = {
   description: string;
   price: number;
   sales: number;
+};
+
+type BrowseItem = {
+  id: string;
+  kind: Kind;
+  title: string;
+  description: string;
+  price: number;
+  author: Person;
 };
 
 const kinds = {
@@ -111,21 +130,55 @@ const previewItems: PaidItem[] = [
   },
 ];
 
+const browseItems: BrowseItem[] = [
+  {
+    id: "b1",
+    kind: "video",
+    title: "Bastidores do estúdio",
+    description: "O processo completo, do esboço à peça final.",
+    price: 3000,
+    author: joel,
+  },
+  {
+    id: "b2",
+    kind: "photo",
+    title: "Luanda ao fim do dia",
+    description: "Fotografias em alta resolução da série do Atlântico.",
+    price: 1800,
+    author: lina,
+  },
+  {
+    id: "b3",
+    kind: "collection",
+    title: "Coleção da semana",
+    description: "Uma seleção com os melhores conteúdos exclusivos.",
+    price: 4200,
+    author: equipa,
+  },
+];
+
 /** Capas abstratas de representação (sem fotos de pessoas), uma por tipo de conteúdo. */
 const covers = { video: "bg-paid-a", photo: "bg-paid-b", collection: "bg-paid-c" } as const;
 
 const formatKz = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
+const tabs: { key: View; label: string; icon: typeof Compass }[] = [
+  { key: "explore", label: "Explorar", icon: Compass },
+  { key: "mine", label: "Os meus conteúdos", icon: Sparkles },
+];
+
 export function PaidContent() {
+  const [view, setView] = useState<View>("explore");
   const [filter, setFilter] = useState<Filter>("all");
   const [creating, setCreating] = useState(false);
   const [detail, setDetail] = useState<PaidItem | null>(null);
+  const [buying, setBuying] = useState<BrowseItem | null>(null);
 
   const visible = filter === "all" ? previewItems : previewItems.filter((i) => i.status === filter);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-[600px] bg-background pb-12 text-foreground">
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/60 bg-background/85 px-3 backdrop-blur-xl">
+    <div className="mx-auto min-h-dvh max-w-[640px] bg-background pb-14 text-foreground">
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/60 bg-background/85 px-4 backdrop-blur-xl">
         <Link
           to="/perfil"
           aria-label="Voltar ao perfil"
@@ -134,7 +187,7 @@ export function PaidContent() {
           <ChevronLeft className="size-6" />
         </Link>
         <h1 className="min-w-0 flex-1 truncate font-display text-lg font-semibold">
-          Conteúdos pagos
+          Conteúdo pago
         </h1>
         <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-3 text-xs font-bold text-primary">
           <Crown className="size-4" aria-hidden="true" />
@@ -142,88 +195,138 @@ export function PaidContent() {
         </span>
       </header>
 
-      <main className="space-y-6 px-4 pt-4">
-        <section aria-labelledby="verificacao" className="rounded-3xl bg-card p-5">
-          <h2 id="verificacao" className="text-sm font-semibold text-muted-foreground">
-            Estado de verificação
-          </h2>
-          <div className="mt-4 flex items-center gap-4">
-            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-sky-500/15">
-              <BadgeCheck className="size-8 fill-sky-500 text-white" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="font-display text-xl font-bold">Verificado</p>
-              <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                Podes publicar e vender conteúdos Premium
-              </p>
-            </div>
-          </div>
-        </section>
+      <div
+        role="tablist"
+        aria-label="Secções de conteúdo pago"
+        className="sticky top-14 z-10 flex gap-2 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-xl"
+      >
+        {tabs.map(({ key, label, icon: Icon }) => {
+          const selected = key === view;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setView(key)}
+              className={cn(
+                "flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                selected
+                  ? "bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_oklch(0.63_0.22_18/0.8)]"
+                  : "bg-secondary text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-[18px]" aria-hidden="true" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
-        <Button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="h-12 w-full rounded-2xl text-[15px] font-bold shadow-[0_10px_28px_-10px_oklch(0.63_0.22_18/0.75)] transition-transform active:scale-[0.98]"
-        >
-          <Plus className="size-5" />
-          Criar conteúdo pago
-        </Button>
-
-        <section aria-labelledby="meus-conteudos">
-          <h2 id="meus-conteudos" className="font-display text-lg font-semibold">
-            Os meus conteúdos
-          </h2>
-
-          <div
-            role="group"
-            aria-label="Filtrar conteúdos"
-            className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4"
-          >
-            {filters.map((item) => {
-              const selected = item.key === filter;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setFilter(item.key)}
-                  className={cn(
-                    "h-10 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    selected
-                      ? "bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_oklch(0.63_0.22_18/0.8)]"
-                      : "bg-secondary text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
+      {view === "explore" ? (
+        <main className="space-y-6 px-5 pt-6">
+          <div>
+            <h2 className="font-display text-xl font-semibold">Descobre conteúdo novo</h2>
+            <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">
+              Vídeos, fotografias e coleções exclusivas de outros criadores do LEVE.
+            </p>
           </div>
 
-          <ul className="mt-4 space-y-4">
-            {visible.length ? (
-              visible.map((item) => (
-                <li
-                  key={item.id}
-                  className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
-                >
-                  <ContentCard item={item} onOpen={() => setDetail(item)} />
-                </li>
-              ))
-            ) : (
-              <li className="grid min-h-48 place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
-                <div>
-                  <Crown className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
-                  <p className="mt-3 text-sm font-semibold">Nenhum conteúdo aqui</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Os conteúdos deste estado aparecem nesta lista.
-                  </p>
-                </div>
+          <ul className="space-y-5">
+            {browseItems.map((item) => (
+              <li key={item.id}>
+                <BrowseCard item={item} onBuy={() => setBuying(item)} />
               </li>
-            )}
+            ))}
           </ul>
-        </section>
-      </main>
+        </main>
+      ) : (
+        <main className="space-y-7 px-5 pt-6">
+          <section aria-labelledby="verificacao" className="rounded-3xl bg-card p-5">
+            <h2 id="verificacao" className="text-sm font-semibold text-muted-foreground">
+              Estado de verificação
+            </h2>
+            <div className="mt-4 flex items-center gap-4">
+              <span className="grid size-14 shrink-0 place-items-center rounded-full bg-sky-500/15">
+                <BadgeCheck className="size-8 fill-sky-500 text-white" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-display text-xl font-bold">Verificado</p>
+                <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
+                  Podes publicar e vender conteúdos Premium
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <Button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="h-12 w-full rounded-2xl text-[15px] font-bold shadow-[0_10px_28px_-10px_oklch(0.63_0.22_18/0.75)] transition-transform active:scale-[0.98]"
+          >
+            <Plus className="size-5" />
+            Criar conteúdo pago
+          </Button>
+
+          <section aria-labelledby="meus-conteudos">
+            <h2 id="meus-conteudos" className="font-display text-lg font-semibold">
+              Os meus conteúdos
+            </h2>
+            <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
+              O que publicaste para venda, e como está a vender.
+            </p>
+
+            <div
+              role="group"
+              aria-label="Filtrar conteúdos"
+              className="scrollbar-none -mx-5 mt-4 flex gap-2 overflow-x-auto px-5"
+            >
+              {filters.map((item) => {
+                const selected = item.key === filter;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setFilter(item.key)}
+                    className={cn(
+                      "h-10 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      selected
+                        ? "bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_oklch(0.63_0.22_18/0.8)]"
+                        : "bg-secondary text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <ul className="mt-5 space-y-5">
+              {visible.length ? (
+                visible.map((item) => (
+                  <li
+                    key={item.id}
+                    className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                  >
+                    <ContentCard item={item} onOpen={() => setDetail(item)} />
+                  </li>
+                ))
+              ) : (
+                <li className="grid min-h-48 place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
+                  <div>
+                    <Crown className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
+                    <p className="mt-3 text-sm font-semibold">Nenhum conteúdo aqui</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Os conteúdos deste estado aparecem nesta lista.
+                    </p>
+                  </div>
+                </li>
+              )}
+            </ul>
+          </section>
+        </main>
+      )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto rounded-3xl">
@@ -237,6 +340,10 @@ export function PaidContent() {
 
       <Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
         {detail && <DetailContent item={detail} />}
+      </Dialog>
+
+      <Dialog open={buying !== null} onOpenChange={(open) => !open && setBuying(null)}>
+        {buying && <PurchaseContent item={buying} />}
       </Dialog>
     </div>
   );
@@ -257,18 +364,93 @@ function StatusBadge({ status, className }: { status: Status; className?: string
   );
 }
 
-function Cover({ item, className }: { item: PaidItem; className?: string }) {
-  const Icon = kinds[item.kind].icon;
+function Cover({ kind, className }: { kind: Kind; className?: string }) {
+  const Icon = kinds[kind].icon;
   return (
-    <div
-      className={cn(
-        "relative grid aspect-[16/10] place-items-center",
-        covers[item.kind],
-        className,
-      )}
-    >
+    <div className={cn("relative grid aspect-[16/10] place-items-center", covers[kind], className)}>
       <Icon className="size-12 text-white/35" strokeWidth={1.4} aria-hidden="true" />
     </div>
+  );
+}
+
+function BrowseCard({ item, onBuy }: { item: BrowseItem; onBuy: () => void }) {
+  return (
+    <article className="overflow-hidden rounded-3xl bg-card">
+      <div className="relative">
+        <Cover kind={item.kind} />
+        <span className="absolute left-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-full bg-black/50 px-3 text-xs font-bold text-white backdrop-blur">
+          <Lock className="size-3.5" aria-hidden="true" />
+          Bloqueado
+        </span>
+      </div>
+
+      <div className="p-5">
+        <PersonLink person={item.author} className="flex items-center gap-2.5 hover:opacity-80">
+          <Avatar person={item.author} size="sm" />
+          <span className="min-w-0 text-sm font-semibold">{item.author.name}</span>
+        </PersonLink>
+
+        <span className="mt-4 inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
+          {kinds[item.kind].label}
+        </span>
+
+        <h3 className="mt-4 font-display text-xl font-bold leading-tight">{item.title}</h3>
+        <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">{item.description}</p>
+
+        <div className="my-5 h-px bg-border" />
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Preço único</p>
+            <p className="font-display text-2xl font-extrabold tracking-tight">
+              {formatKz(item.price)} Kz
+            </p>
+          </div>
+          <Button type="button" onClick={onBuy} className="h-11 rounded-full px-6 font-bold">
+            Comprar
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PurchaseContent({ item }: { item: BrowseItem }) {
+  return (
+    <DialogContent className="w-[calc(100%-1.5rem)] max-w-md gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
+      <Cover kind={item.kind} />
+      <div className="space-y-5 p-5">
+        <div>
+          <span className="inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
+            {kinds[item.kind].label}
+          </span>
+          <DialogTitle className="mt-3 font-display text-xl font-bold">{item.title}</DialogTitle>
+          <DialogDescription className="mt-1.5 text-[15px] leading-6">
+            {item.description}
+          </DialogDescription>
+        </div>
+
+        <PersonLink person={item.author} className="flex items-center gap-2.5 hover:opacity-80">
+          <Avatar person={item.author} size="sm" />
+          <span className="min-w-0 text-sm font-semibold">De {item.author.name}</span>
+        </PersonLink>
+
+        <div>
+          <p className="text-sm text-muted-foreground">Vais pagar</p>
+          <p className="font-display text-3xl font-extrabold tracking-tight">
+            {formatKz(item.price)} Kz
+          </p>
+        </div>
+
+        <p className="rounded-2xl bg-secondary px-4 py-3.5 text-sm leading-5 text-muted-foreground">
+          Recebes o link de acesso assim que o pagamento for confirmado.
+        </p>
+
+        <Button type="button" className="h-12 w-full rounded-2xl font-bold">
+          Confirmar compra
+        </Button>
+      </div>
+    </DialogContent>
   );
 }
 
@@ -276,7 +458,7 @@ function ContentCard({ item, onOpen }: { item: PaidItem; onOpen: () => void }) {
   return (
     <article className="overflow-hidden rounded-3xl bg-card">
       <div className="relative">
-        <Cover item={item} />
+        <Cover kind={item.kind} />
         <StatusBadge status={item.status} className="absolute left-3 top-3" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -354,7 +536,7 @@ function ContentCard({ item, onOpen }: { item: PaidItem; onOpen: () => void }) {
 function DetailContent({ item }: { item: PaidItem }) {
   return (
     <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-md gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
-      <Cover item={item} />
+      <Cover kind={item.kind} />
       <div className="space-y-5 p-5">
         <div>
           <div className="flex items-center gap-2">
