@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { me, posts, suggestions, trending, type Post } from "./data";
 import { ActionButton, Avatar, IconButton, formatCount } from "./primitives";
+import { VideoPlayer } from "./video-player";
 
 export function Feed({
   onPost,
@@ -97,21 +98,31 @@ export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </IconButton>
       </header>
 
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={`Abrir publicação de ${post.author.name}`}
-        className="group block w-full overflow-hidden rounded-[1.25rem] bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <img
-          src={post.image}
-          alt={`Publicação de ${post.author.name}`}
-          className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-          loading="lazy"
-          width={1200}
-          height={1504}
+      {post.video ? (
+        <VideoPlayer
+          src={post.video}
+          poster={post.image}
+          durationHint={post.duration}
+          label={`Vídeo de ${post.author.name}`}
+          className="aspect-[4/5] rounded-[1.25rem]"
         />
-      </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Abrir publicação de ${post.author.name}`}
+          className="group block w-full overflow-hidden rounded-[1.25rem] bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <img
+            src={post.image}
+            alt={`Publicação de ${post.author.name}`}
+            className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            loading="lazy"
+            width={1200}
+            height={1504}
+          />
+        </button>
+      )}
 
       <div className="mt-3 flex items-center gap-1 pl-1">
         <ActionButton

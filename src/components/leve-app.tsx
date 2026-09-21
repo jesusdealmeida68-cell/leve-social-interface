@@ -5,6 +5,7 @@ import { Messages } from "./leve/messages";
 import { Composer, PostDetail, type ComposerMode } from "./leve/overlays";
 import { Profile } from "./leve/profile";
 import { MobileHeader, MobileTabBar, NotificationPanel, Sidebar } from "./leve/shell";
+import { VideoPrefsProvider } from "./leve/video-player";
 import type { Post, Section } from "./leve/data";
 
 /** Estrutura comum do LEVE: navegação, área de conteúdo e as camadas (criar, detalhe). */
@@ -20,6 +21,7 @@ export function LeveApp({ section }: { section: Section }) {
   }, [pathname]);
 
   return (
+    <VideoPrefsProvider>
     <div className="min-h-dvh bg-background text-foreground">
       <Sidebar section={section} onCreate={() => setComposer("post")} />
       <MobileHeader />
@@ -47,5 +49,6 @@ export function LeveApp({ section }: { section: Section }) {
       <Composer mode={composer} onClose={() => setComposer(null)} />
       <PostDetail post={openPost} onClose={() => setOpenPost(null)} />
     </div>
+    </VideoPrefsProvider>
   );
 }

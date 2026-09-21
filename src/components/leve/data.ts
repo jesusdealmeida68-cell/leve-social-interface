@@ -1,6 +1,8 @@
 import editorialOne from "@/assets/leve-editorial-1.jpg";
 import editorialTwo from "@/assets/leve-editorial-2.jpg";
 import editorialThree from "@/assets/leve-editorial-3.jpg";
+import videoEstudio from "@/assets/leve-video-estudio.mp4";
+import videoAtlantico from "@/assets/leve-video-atlantico.mp4";
 
 export type Section = "feed" | "messages" | "profile";
 
@@ -15,6 +17,9 @@ export type Post = {
   comments: number;
   views: number;
   time: string;
+  /** Vídeo da publicação (quando existe, o feed mostra o leitor em vez da imagem). */
+  video?: string;
+  duration?: string;
 };
 
 export type ChatMessage = { from: "me" | "them"; text: string };
@@ -60,6 +65,8 @@ export const posts: Post[] = [
     comments: 94,
     views: 12900,
     time: "Há 2 h",
+    duration: "0:11",
+    video: videoEstudio,
   },
   {
     id: 3,
@@ -70,6 +77,8 @@ export const posts: Post[] = [
     comments: 207,
     views: 56800,
     time: "Ontem",
+    duration: "0:08",
+    video: videoAtlantico,
   },
 ];
 
