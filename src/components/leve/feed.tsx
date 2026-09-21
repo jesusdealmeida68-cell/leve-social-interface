@@ -55,14 +55,13 @@ export function Feed({
               />
             </label>
             {/* Só o botão: por agora não faz nada. */}
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="h-11 shrink-0 gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] sm:px-4"
+              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-premium px-3.5 text-[13px] font-bold text-[oklch(0.24_0.05_60)] shadow-premium transition-[transform,filter] duration-200 hover:-translate-y-px hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.97] sm:px-4"
             >
-              <CircleDollarSign className="hidden size-4 sm:block" />
+              <CircleDollarSign className="hidden size-4 sm:block" strokeWidth={2.2} />
               Conteúdos pagos
-            </Button>
+            </button>
             <IconButton
               label="Notificações"
               active={notificationsOpen}

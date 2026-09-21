@@ -156,6 +156,22 @@
   button, a, input, textarea { letter-spacing: 0; }
 }
 
+/* Dourado dos conteúdos pagos */
+@utility bg-premium {
+  background-image: linear-gradient(
+    135deg,
+    oklch(0.9 0.13 92),
+    oklch(0.8 0.16 72) 55%,
+    oklch(0.72 0.17 52)
+  );
+}
+
+@utility shadow-premium {
+  box-shadow:
+    0 8px 22px -8px oklch(0.8 0.16 72 / 0.65),
+    inset 0 1px 0 oklch(1 0 0 / 0.45);
+}
+
 @utility bg-story {
   background: linear-gradient(135deg, oklch(0.55 0.2 20), oklch(0.72 0.2 8));
 }
