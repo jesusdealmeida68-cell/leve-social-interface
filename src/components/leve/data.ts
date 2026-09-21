@@ -20,6 +20,8 @@ export type Post = {
   /** Vídeo da publicação (quando existe, o feed mostra o leitor em vez da imagem). */
   video?: string;
   duration?: string;
+  /** Quando a publicação junta várias fotos/vídeos, o total de itens (a miniatura mostra este número). */
+  mediaCount?: number;
 };
 
 export type ChatMessage = { from: "me" | "them"; text: string };
@@ -55,6 +57,7 @@ export const posts: Post[] = [
     comments: 128,
     views: 18400,
     time: "Há 18 min",
+    mediaCount: 4,
   },
   {
     id: 2,

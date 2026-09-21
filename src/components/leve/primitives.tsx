@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, MessageCircle, Play } from "lucide-react";
+import { Heart, Images, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Person, Post } from "./data";
@@ -184,6 +184,13 @@ export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) 
         <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
           <Play className="size-3 fill-current" aria-hidden="true" />
           {post.duration}
+        </span>
+      )}
+
+      {!post.video && post.mediaCount && post.mediaCount > 1 && (
+        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
+          <Images className="size-3" aria-hidden="true" />
+          {post.mediaCount}
         </span>
       )}
 
