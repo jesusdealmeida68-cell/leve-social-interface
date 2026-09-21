@@ -42,8 +42,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { equipa, joel, lina, type Person } from "./data";
+import type { Profile } from "@/lib/leve";
 import { Avatar, PersonLink } from "./primitives";
+
+/** Autores de exemplo para os cartões de "Explorar" (só desenho, sem ligação real). */
+const authorJoel: Profile = {
+  id: "preview-joel",
+  username: "joelmota",
+  name: "Joel Mota",
+  bio: null,
+  avatar_url: null,
+  cover_url: null,
+};
+const authorLina: Profile = {
+  id: "preview-lina",
+  username: "linasousa",
+  name: "Lina Sousa",
+  bio: null,
+  avatar_url: null,
+  cover_url: null,
+};
+const authorEquipa: Profile = {
+  id: "preview-equipa",
+  username: "equipaleve",
+  name: "Equipa LEVE",
+  bio: null,
+  avatar_url: null,
+  cover_url: null,
+};
 
 /* ---------------------------------------------------------------------------
  * Página "Conteúdo pago" — SÓ VISUAL.
@@ -78,7 +104,7 @@ type BrowseItem = {
   title: string;
   description: string;
   price: number;
-  author: Person;
+  author: Profile;
 };
 
 const kinds = {
@@ -137,7 +163,7 @@ const browseItems: BrowseItem[] = [
     title: "Bastidores do estúdio",
     description: "O processo completo, do esboço à peça final.",
     price: 3000,
-    author: joel,
+    author: authorJoel,
   },
   {
     id: "b2",
@@ -145,7 +171,7 @@ const browseItems: BrowseItem[] = [
     title: "Luanda ao fim do dia",
     description: "Fotografias em alta resolução da série do Atlântico.",
     price: 1800,
-    author: lina,
+    author: authorLina,
   },
   {
     id: "b3",
@@ -153,7 +179,7 @@ const browseItems: BrowseItem[] = [
     title: "Coleção da semana",
     description: "Uma seleção com os melhores conteúdos exclusivos.",
     price: 4200,
-    author: equipa,
+    author: authorEquipa,
   },
 ];
 
