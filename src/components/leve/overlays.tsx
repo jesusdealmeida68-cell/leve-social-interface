@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { me, postComments, type Post } from "./data";
 import { ActionButton, Avatar, IconButton, formatCount } from "./primitives";
+import { VideoPlayer } from "./video-player";
 
 /* ------------------------------ Criar ------------------------------ */
 
@@ -153,13 +154,23 @@ function PostDetailContent({ post }: { post: Post }) {
       <DialogDescription className="sr-only">{post.caption}</DialogDescription>
       <div className="grid md:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
         <div className="bg-secondary">
-          <img
-            src={post.image}
-            alt={`Publicação de ${post.author.name}`}
-            className="max-h-[60dvh] w-full object-cover md:h-full md:max-h-[92dvh]"
-            width={1200}
-            height={1504}
-          />
+          {post.video ? (
+            <VideoPlayer
+              src={post.video}
+              poster={post.image}
+              durationHint={post.duration}
+              label={`Vídeo de ${post.author.name}`}
+              className="max-h-[60dvh] w-full md:h-full md:max-h-[92dvh]"
+            />
+          ) : (
+            <img
+              src={post.image}
+              alt={`Publicação de ${post.author.name}`}
+              className="max-h-[60dvh] w-full object-cover md:h-full md:max-h-[92dvh]"
+              width={1200}
+              height={1504}
+            />
+          )}
         </div>
 
         <div className="flex min-h-0 flex-col p-5">

@@ -1,9 +1,8 @@
-import { Bell, Heart, MessageCircle, MoreHorizontal, Search } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { me, posts, suggestions, trending, type Post } from "./data";
-import { ActionButton, Avatar, IconButton, formatCount } from "./primitives";
-import { VideoPlayer } from "./video-player";
+import { posts, suggestions, trending, type Post } from "./data";
+import { Avatar, IconButton, PostThumb } from "./primitives";
 
 export function Feed({
   onPost,
@@ -46,110 +45,26 @@ export function Feed({
           </div>
         </div>
 
-        <div className="space-y-5 px-4 pb-10 pt-4">
-          {filtered.length ? (
-            filtered.map((post) => (
-              <PostCard key={post.id} post={post} onOpen={() => onPost(post)} />
-            ))
-          ) : (
-            <div className="grid min-h-64 place-items-center rounded-3xl border border-dashed border-border text-center">
-              <div>
-                <Search className="mx-auto size-6 text-muted-foreground" />
-                <p className="mt-3 text-sm font-semibold">Nada encontrado</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Tenta outro nome ou outra palavra.
-                </p>
-              </div>
+        {filtered.length ? (
+          <div className="grid grid-cols-2 gap-3 px-4 pb-10 pt-4">
+            {filtered.map((post) => (
+              <PostThumb key={post.id} post={post} onOpen={() => onPost(post)} />
+            ))}
+          </div>
+        ) : (
+          <div className="mx-4 mt-4 grid min-h-64 place-items-center rounded-3xl border border-dashed border-border text-center">
+            <div>
+              <Search className="mx-auto size-6 text-muted-foreground" />
+              <p className="mt-3 text-sm font-semibold">Nada encontrado</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tenta outro nome ou outra palavra.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </section>
       <RightRail />
     </div>
-  );
-}
-
-export function PostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
-  const [liked, setLiked] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const isMine = post.author.handle === me.handle;
-
-  return (
-    <article className="rounded-[1.75rem] border border-border bg-card p-4 shadow-sm sm:p-5">
-      <header className="flex items-center gap-3 pb-4">
-        <Avatar person={post.author} size="md" />
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-[15px] font-bold">{post.author.name}</p>
-          <p className="truncate text-[13px] text-muted-foreground">
-            {post.author.handle} · {post.time}
-          </p>
-        </div>
-        {!isMine && (
-          <Button
-            variant={following ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setFollowing(!following)}
-          >
-            {following ? "A seguir" : "Seguir"}
-          </Button>
-        )}
-        <IconButton label="Mais opções" className="-mr-1">
-          <MoreHorizontal />
-        </IconButton>
-      </header>
-
-      {post.video ? (
-        <VideoPlayer
-          src={post.video}
-          poster={post.image}
-          durationHint={post.duration}
-          label={`Vídeo de ${post.author.name}`}
-          className="aspect-[4/5] rounded-[1.25rem]"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label={`Abrir publicação de ${post.author.name}`}
-          className="group block w-full overflow-hidden rounded-[1.25rem] bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <img
-            src={post.image}
-            alt={`Publicação de ${post.author.name}`}
-            className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-            loading="lazy"
-            width={1200}
-            height={1504}
-          />
-        </button>
-      )}
-
-      <div className="mt-3 flex items-center gap-1 pl-1">
-        <ActionButton
-          label="Curtir"
-          pressed={liked}
-          active={liked}
-          tone="like"
-          count={formatCount(post.likes + (liked ? 1 : 0))}
-          onClick={() => setLiked(!liked)}
-        >
-          <Heart className="size-[22px]" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
-        </ActionButton>
-        <ActionButton label="Comentários" count={formatCount(post.comments)} onClick={onOpen}>
-          <MessageCircle className="size-[22px]" strokeWidth={1.8} />
-        </ActionButton>
-      </div>
-
-      <div className="mt-1 px-1 pb-1">
-        <p className="text-sm leading-6">
-          <strong className="mr-1.5 font-bold">{post.author.handle}</strong>
-          {post.caption}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {formatCount(post.views)} visualizações
-        </p>
-      </div>
-    </article>
   );
 }
 

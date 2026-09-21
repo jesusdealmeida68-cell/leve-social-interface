@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import { Heart, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Person } from "./data";
+import type { Person, Post } from "./data";
 import leveIcon from "@/assets/leve-icon.png";
 
 export function formatCount(value: number) {
@@ -161,6 +162,48 @@ export function ActionButton({
     >
       {children}
       {count !== undefined && <span className="tabular-nums">{count}</span>}
+    </button>
+  );
+}
+
+/** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). */
+export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Abrir publicação: ${post.caption}`}
+      className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <img
+        src={post.image}
+        alt=""
+        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+        width={600}
+        height={750}
+      />
+
+      {post.video && (
+        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
+          <Play className="size-3 fill-current" aria-hidden="true" />
+          {post.duration}
+        </span>
+      )}
+
+      <span
+        className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-2.5 py-2 text-xs font-semibold text-white"
+        aria-hidden="true"
+      >
+        <span className="flex items-center gap-1">
+          <Heart className="size-3.5 fill-current text-primary" />
+          {formatCount(post.likes)}
+        </span>
+        <span className="flex items-center gap-1">
+          <MessageCircle className="size-3.5" />
+          {formatCount(post.comments)}
+        </span>
+      </span>
     </button>
   );
 }

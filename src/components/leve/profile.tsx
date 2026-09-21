@@ -1,7 +1,7 @@
-import { Grid3x3, Heart, MessageCircle, Play } from "lucide-react";
+import { Grid3x3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { me, posts, profileCover, type Post } from "./data";
-import { Avatar, formatCount } from "./primitives";
+import { Avatar, formatCount, PostThumb } from "./primitives";
 
 /** As publicações do perfil aparecem numa grelha de 2 colunas. */
 const myPosts = posts.map((post) => ({ ...post, author: me }));
@@ -57,43 +57,7 @@ export function Profile({ onPost }: { onPost: (post: Post) => void }) {
 
       <div className="grid grid-cols-2 gap-3 px-4 sm:px-8">
         {myPosts.map((post) => (
-          <button
-            key={post.id}
-            type="button"
-            onClick={() => onPost(post)}
-            aria-label={`Abrir publicação: ${post.caption}`}
-            className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <img
-              src={post.image}
-              alt=""
-              className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-              width={600}
-              height={750}
-            />
-
-            {post.video && (
-              <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
-                <Play className="size-3 fill-current" aria-hidden="true" />
-                {post.duration}
-              </span>
-            )}
-
-            <span
-              className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-2.5 py-2 text-xs font-semibold text-white"
-              aria-hidden="true"
-            >
-              <span className="flex items-center gap-1">
-                <Heart className="size-3.5 fill-current text-primary" />
-                {formatCount(post.likes)}
-              </span>
-              <span className="flex items-center gap-1">
-                <MessageCircle className="size-3.5" />
-                {formatCount(post.comments)}
-              </span>
-            </span>
-          </button>
+          <PostThumb key={post.id} post={post} onOpen={() => onPost(post)} />
         ))}
       </div>
     </div>
