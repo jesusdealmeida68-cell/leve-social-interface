@@ -89,6 +89,18 @@ export const profilePosts: Post[] = [...posts, ...posts, ...posts, ...posts].map
   author: amara,
 }));
 
+/** Todas as publicações conhecidas, para procurar uma pelo id (ex.: página de assistir vídeo). */
+export const allPosts: Post[] = [...posts, ...profilePosts];
+
+export function getPostById(id: number): Post | undefined {
+  return allPosts.find((post) => post.id === id);
+}
+
+/** Vídeos disponíveis, na ordem em que aparecem no feed e no perfil. */
+export const videoPosts: Post[] = allPosts.filter((post): post is Post & { video: string } =>
+  Boolean(post.video),
+);
+
 export const profileCover = editorialThree;
 
 export const postComments: { person: Person; text: string }[] = [

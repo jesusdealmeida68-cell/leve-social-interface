@@ -136,18 +136,6 @@ export function PostDetail({ post, onClose }: { post: Post | null; onClose: () =
 }
 
 function PostDetailContent({ post }: { post: Post }) {
-  const [liked, setLiked] = useState(false);
-  const [comment, setComment] = useState("");
-  const [extra, setExtra] = useState<string[]>([]);
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const text = comment.trim();
-    if (!text) return;
-    setExtra((items) => [...items, text]);
-    setComment("");
-  };
-
   return (
     <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-5xl gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
       <DialogTitle className="sr-only">Publicação de {post.author.name}</DialogTitle>
@@ -186,69 +174,86 @@ function PostDetailContent({ post }: { post: Post }) {
 
           <p className="mt-5 text-[15px] leading-6">{post.caption}</p>
 
-          <div className="mt-4 flex items-center gap-1 pl-1">
-            <ActionButton
-              label="Curtir"
-              pressed={liked}
-              active={liked}
-              tone="like"
-              count={formatCount(post.likes + (liked ? 1 : 0))}
-              onClick={() => setLiked(!liked)}
-            >
-              <Heart
-                className="size-[22px]"
-                strokeWidth={1.8}
-                fill={liked ? "currentColor" : "none"}
-              />
-            </ActionButton>
-            <ActionButton label="Comentários" count={formatCount(post.comments + extra.length)}>
-              <MessageCircle className="size-[22px]" strokeWidth={1.8} />
-            </ActionButton>
-          </div>
-
-          <ul className="mt-4 space-y-4 border-t border-border pt-4">
-            {postComments.map((item) => (
-              <li key={item.person.handle} className="flex items-start gap-3">
-                <Avatar person={item.person} size="sm" />
-                <p className="min-w-0 text-sm leading-5">
-                  <strong className="mr-1.5 font-bold">{item.person.handle}</strong>
-                  {item.text}
-                </p>
-              </li>
-            ))}
-            {extra.map((text, index) => (
-              <li key={`${index}-${text}`} className="flex items-start gap-3">
-                <Avatar person={me} size="sm" />
-                <p className="min-w-0 break-words text-sm leading-5">
-                  <strong className="mr-1.5 font-bold">{me.handle}</strong>
-                  {text}
-                </p>
-              </li>
-            ))}
-          </ul>
-
-          <form
-            onSubmit={submit}
-            className="mt-5 flex items-center gap-1 rounded-full bg-secondary p-1.5 transition-shadow focus-within:ring-2 focus-within:ring-ring md:mt-auto"
-          >
-            <input
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              aria-label="Escrever comentário"
-              placeholder="Escrever comentário..."
-              className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
-            />
-            <button
-              type="submit"
-              aria-label="Enviar comentário"
-              disabled={!comment.trim()}
-              className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-[opacity,transform] hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 disabled:bg-accent disabled:text-muted-foreground"
-            >
-              <Send className="size-[18px]" />
-            </button>
-          </form>
+          <CommentsSection post={post} />
         </div>
       </div>
     </DialogContent>
+  );
+}
+
+/** Curtir/comentar + lista de comentários + campo para escrever. Usado no detalhe da publicação e na página de assistir vídeo. */
+export function CommentsSection({ post }: { post: Post }) {
+  const [liked, setLiked] = useState(false);
+  const [comment, setComment] = useState("");
+  const [extra, setExtra] = useState<string[]>([]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const text = comment.trim();
+    if (!text) return;
+    setExtra((items) => [...items, text]);
+    setComment("");
+  };
+
+  return (
+    <>
+      <div className="mt-4 flex items-center gap-1 pl-1">
+        <ActionButton
+          label="Curtir"
+          pressed={liked}
+          active={liked}
+          tone="like"
+          count={formatCount(post.likes + (liked ? 1 : 0))}
+          onClick={() => setLiked(!liked)}
+        >
+          <Heart className="size-[22px]" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
+        </ActionButton>
+        <ActionButton label="Comentários" count={formatCount(post.comments + extra.length)}>
+          <MessageCircle className="size-[22px]" strokeWidth={1.8} />
+        </ActionButton>
+      </div>
+
+      <ul className="mt-4 space-y-4 border-t border-border pt-4">
+        {postComments.map((item) => (
+          <li key={item.person.handle} className="flex items-start gap-3">
+            <Avatar person={item.person} size="sm" />
+            <p className="min-w-0 text-sm leading-5">
+              <strong className="mr-1.5 font-bold">{item.person.handle}</strong>
+              {item.text}
+            </p>
+          </li>
+        ))}
+        {extra.map((text, index) => (
+          <li key={`${index}-${text}`} className="flex items-start gap-3">
+            <Avatar person={me} size="sm" />
+            <p className="min-w-0 break-words text-sm leading-5">
+              <strong className="mr-1.5 font-bold">{me.handle}</strong>
+              {text}
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <form
+        onSubmit={submit}
+        className="mt-5 flex items-center gap-1 rounded-full bg-secondary p-1.5 transition-shadow focus-within:ring-2 focus-within:ring-ring md:mt-auto"
+      >
+        <input
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          aria-label="Escrever comentário"
+          placeholder="Escrever comentário..."
+          className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
+        />
+        <button
+          type="submit"
+          aria-label="Enviar comentário"
+          disabled={!comment.trim()}
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-[opacity,transform] hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 disabled:bg-accent disabled:text-muted-foreground"
+        >
+          <Send className="size-[18px]" />
+        </button>
+      </form>
+    </>
   );
 }

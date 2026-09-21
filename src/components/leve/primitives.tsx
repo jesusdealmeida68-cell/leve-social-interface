@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { Heart, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -166,15 +167,10 @@ export function ActionButton({
   );
 }
 
-/** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). */
+/** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Vídeo abre a página de assistir. */
 export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`Abrir publicação: ${post.caption}`}
-      className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
+  const content = (
+    <>
       <img
         src={post.image}
         alt=""
@@ -204,6 +200,33 @@ export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) 
           {formatCount(post.comments)}
         </span>
       </span>
+    </>
+  );
+
+  const className =
+    "group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  if (post.video) {
+    return (
+      <Link
+        to="/video/$postId"
+        params={{ postId: String(post.id) }}
+        aria-label={`Assistir vídeo: ${post.caption}`}
+        className={className}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Abrir publicação: ${post.caption}`}
+      className={className}
+    >
+      {content}
     </button>
   );
 }
