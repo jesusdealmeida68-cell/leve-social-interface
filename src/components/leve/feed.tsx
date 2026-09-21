@@ -1,10 +1,16 @@
 import { Bell, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { listFeed, listSuggestions, toggleFollow, type Profile } from "@/lib/leve";
+import { cn } from "@/lib/utils";
 import { Avatar, IconButton, PersonLink, PostThumb } from "./primitives";
+
+/** Uma publicação conta como "nova" durante as primeiras 24 horas. */
+const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+type FeedTab = "all" | "new";
 
 export function Feed({
   notificationsOpen,
@@ -15,11 +21,23 @@ export function Feed({
 }) {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<FeedTab>("all");
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["feed", user?.id ?? null, query],
     queryFn: () => listFeed(user?.id ?? null, query),
   });
+
+  /* "Conteúdos novos": só o que foi publicado nas últimas 24 horas, o mais recente primeiro. */
+  const newPosts = useMemo(() => {
+    const limit = Date.now() - NEW_WINDOW_MS;
+    return (posts ?? []).filter((post) => new Date(post.created_at).getTime() >= limit);
+  }, [posts]);
+  const visible = tab === "new" ? newPosts : posts;
+  const tabs: { key: FeedTab; label: string; count?: number }[] = [
+    { key: "all", label: "Todo o conteúdo" },
+    { key: "new", label: "Conteúdos novos", count: newPosts.length },
+  ];
 
   return (
     <div className="mx-auto grid max-w-[600px] xl:max-w-[960px] xl:grid-cols-[minmax(0,600px)_320px] xl:gap-10">
@@ -45,6 +63,35 @@ export function Feed({
               <Bell className="size-[22px]" />
             </IconButton>
           </div>
+
+          <div
+            role="tablist"
+            aria-label="Tipo de conteúdo"
+            className="mt-3 grid grid-cols-2 border-b border-border"
+          >
+            {tabs.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === item.key}
+                onClick={() => setTab(item.key)}
+                className={cn(
+                  "-mb-px flex h-11 items-center justify-center gap-2 border-b-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  tab === item.key
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item.label}
+                {item.count ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-bold leading-none text-primary-foreground">
+                    {item.count}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
@@ -53,9 +100,9 @@ export function Feed({
               <div key={index} className="aspect-[4/5] animate-pulse rounded-2xl bg-secondary" />
             ))}
           </div>
-        ) : posts && posts.length > 0 ? (
+        ) : visible && visible.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 px-4 pb-10 pt-4">
-            {posts.map((post) => (
+            {visible.map((post) => (
               <PostThumb key={post.id} post={post} />
             ))}
           </div>
@@ -64,10 +111,18 @@ export function Feed({
             <div>
               <Search className="mx-auto size-6 text-muted-foreground" />
               <p className="mt-3 text-sm font-semibold">
-                {query ? "Nada encontrado" : "Ainda não há publicações"}
+                {query
+                  ? "Nada encontrado"
+                  : tab === "new"
+                    ? "Sem conteúdo novo"
+                    : "Ainda não há publicações"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {query ? "Tenta outro nome ou outra palavra." : "Sê a primeira pessoa a publicar."}
+                {query
+                  ? "Tenta outro nome ou outra palavra."
+                  : tab === "new"
+                    ? "Aqui só aparece o que foi publicado nas últimas 24 horas."
+                    : "Sê a primeira pessoa a publicar."}
               </p>
             </div>
           </div>
