@@ -1,19 +1,23 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AtSign,
+  Check,
   ChevronLeft,
   Eye,
   EyeOff,
+  Loader2,
   Lock,
   Phone,
   ShieldCheck,
   Sparkles,
   User,
+  X,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { getProfileByUsername } from "@/lib/leve";
 import heroImage from "@/assets/leve-editorial-3.jpg";
 import { Logo } from "./primitives";
 
@@ -32,16 +36,58 @@ export function SignUp() {
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const changeUsername = (value: string) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9_.]/g, "");
+    setUsername(clean);
+
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+    if (clean.length < 3) {
+      setUsernameStatus(clean.length > 0 ? "invalid" : "idle");
+      return;
+    }
+    setUsernameStatus("checking");
+    checkTimer.current = setTimeout(async () => {
+      try {
+        const existing = await getProfileByUsername(clean);
+        setUsernameStatus(existing ? "taken" : "available");
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (checkTimer.current) clearTimeout(checkTimer.current);
+    };
+  }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
 
+    if (usernameStatus === "taken") {
+      setError("Esse nome de utilizador já está a ser usado. Escolhe outro.");
+      return;
+    }
+    if (usernameStatus === "invalid" || username.length < 3) {
+      setError("O nome de utilizador precisa de pelo menos 3 letras (a-z, 0-9, _ e .).");
+      return;
+    }
+    if (usernameStatus === "checking") {
+      setError("Aguarda um instante enquanto confirmamos o nome de utilizador.");
+      return;
+    }
     if (password !== confirm) {
       setError("As palavras-passe não coincidem.");
       return;
@@ -49,6 +95,12 @@ export function SignUp() {
 
     setLoading(true);
     try {
+      const existing = await getProfileByUsername(username);
+      if (existing) {
+        setUsernameStatus("taken");
+        setError("Esse nome de utilizador já está a ser usado. Escolhe outro.");
+        return;
+      }
       await signUp({ phone, password, username, name });
       navigate({ to: "/" });
     } catch (err) {
@@ -136,14 +188,24 @@ export function SignUp() {
               value={name}
               onChange={setName}
             />
-            <Field
-              icon={AtSign}
-              label="Nome de utilizador"
-              type="text"
-              placeholder="ex: utilizador123"
-              value={username}
-              onChange={setUsername}
-            />
+            <div>
+              <UsernameField value={username} onChange={changeUsername} status={usernameStatus} />
+              {usernameStatus === "taken" && (
+                <p className="mt-1.5 px-1 text-xs font-medium text-destructive">
+                  Esse nome de utilizador já está a ser usado.
+                </p>
+              )}
+              {usernameStatus === "available" && (
+                <p className="mt-1.5 px-1 text-xs font-medium text-primary">
+                  Nome de utilizador disponível.
+                </p>
+              )}
+              {usernameStatus === "invalid" && (
+                <p className="mt-1.5 px-1 text-xs text-muted-foreground">
+                  Mínimo de 3 letras (a-z, 0-9, _ e .).
+                </p>
+              )}
+            </div>
             <Field
               icon={Phone}
               label="Número de telefone"
@@ -228,6 +290,50 @@ function Field({
           required
           className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
         />
+      </span>
+    </label>
+  );
+}
+
+function UsernameField({
+  value,
+  onChange,
+  status,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  status: "idle" | "checking" | "available" | "taken" | "invalid";
+}) {
+  return (
+    <label className="flex h-[58px] items-center gap-3 rounded-2xl bg-secondary px-4 transition-colors focus-within:ring-2 focus-within:ring-ring">
+      <AtSign className="size-[18px] shrink-0 text-muted-foreground" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-[11px] font-semibold text-muted-foreground">Nome de utilizador</span>
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="ex: utilizador123"
+          required
+          minLength={3}
+          autoCapitalize="none"
+          autoCorrect="off"
+          className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+        />
+      </span>
+      <span className="shrink-0" aria-live="polite">
+        {status === "checking" && (
+          <Loader2
+            className="size-[18px] animate-spin text-muted-foreground"
+            aria-label="A verificar"
+          />
+        )}
+        {status === "available" && (
+          <Check className="size-[18px] text-primary" aria-label="Disponível" />
+        )}
+        {(status === "taken" || status === "invalid") && (
+          <X className="size-[18px] text-destructive" aria-label="Indisponível" />
+        )}
       </span>
     </label>
   );
