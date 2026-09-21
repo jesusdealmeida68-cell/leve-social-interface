@@ -8,10 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import { me, postComments, type Post } from "./data";
-import { ActionButton, Avatar, IconButton, formatCount } from "./primitives";
-import { VideoPlayer } from "./video-player";
+import { ActionButton, Avatar, formatCount } from "./primitives";
 
 /* ------------------------------ Criar ------------------------------ */
 
@@ -162,60 +160,6 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
 }
 
 /* ------------------------------ Publicação ------------------------------ */
-
-export function PostDetail({ post, onClose }: { post: Post | null; onClose: () => void }) {
-  return (
-    <Dialog open={post !== null} onOpenChange={(open) => !open && onClose()}>
-      {post && <PostDetailContent post={post} />}
-    </Dialog>
-  );
-}
-
-function PostDetailContent({ post }: { post: Post }) {
-  return (
-    <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-5xl gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
-      <DialogTitle className="sr-only">Publicação de {post.author.name}</DialogTitle>
-      <DialogDescription className="sr-only">{post.caption}</DialogDescription>
-      <div className="grid md:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
-        <div className="bg-secondary">
-          {post.video ? (
-            <VideoPlayer
-              src={post.video}
-              poster={post.image}
-              durationHint={post.duration}
-              label={`Vídeo de ${post.author.name}`}
-              className="max-h-[60dvh] w-full md:h-full md:max-h-[92dvh]"
-            />
-          ) : (
-            <img
-              src={post.image}
-              alt={`Publicação de ${post.author.name}`}
-              className="max-h-[60dvh] w-full object-cover md:h-full md:max-h-[92dvh]"
-              width={1200}
-              height={1504}
-            />
-          )}
-        </div>
-
-        <div className="flex min-h-0 flex-col p-5">
-          <div className="flex items-center gap-3 pr-10">
-            <Avatar person={post.author} size="sm" />
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-bold">{post.author.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {post.author.handle} · {post.time}
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-5 text-[15px] leading-6">{post.caption}</p>
-
-          <CommentsSection post={post} />
-        </div>
-      </div>
-    </DialogContent>
-  );
-}
 
 /** Curtir/comentar + lista de comentários + campo para escrever. Usado no detalhe da publicação e na página de assistir vídeo. */
 export function CommentsSection({ post }: { post: Post }) {

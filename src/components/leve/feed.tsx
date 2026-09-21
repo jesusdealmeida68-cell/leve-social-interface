@@ -1,15 +1,13 @@
 import { Bell, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { posts, suggestions, trending, type Post } from "./data";
+import { posts, suggestions, trending } from "./data";
 import { Avatar, IconButton, PostThumb } from "./primitives";
 
 export function Feed({
-  onPost,
   notificationsOpen,
   onNotifications,
 }: {
-  onPost: (post: Post) => void;
   notificationsOpen: boolean;
   onNotifications: () => void;
 }) {
@@ -48,7 +46,7 @@ export function Feed({
         {filtered.length ? (
           <div className="grid grid-cols-2 gap-3 px-4 pb-10 pt-4">
             {filtered.map((post) => (
-              <PostThumb key={post.id} post={post} onOpen={() => onPost(post)} />
+              <PostThumb key={post.id} post={post} />
             ))}
           </div>
         ) : (

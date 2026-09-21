@@ -167,8 +167,8 @@ export function ActionButton({
   );
 }
 
-/** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Vídeo abre a página de assistir. */
-export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) {
+/** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Abre sempre a mesma página de visualização. */
+export function PostThumb({ post }: { post: Post }) {
   const content = (
     <>
       <img
@@ -210,30 +210,14 @@ export function PostThumb({ post, onOpen }: { post: Post; onOpen: () => void }) 
     </>
   );
 
-  const className =
-    "group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
-  if (post.video) {
-    return (
-      <Link
-        to="/video/$postId"
-        params={{ postId: String(post.id) }}
-        aria-label={`Assistir vídeo: ${post.caption}`}
-        className={className}
-      >
-        {content}
-      </Link>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <Link
+      to="/video/$postId"
+      params={{ postId: String(post.id) }}
       aria-label={`Abrir publicação: ${post.caption}`}
-      className={className}
+      className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {content}
-    </button>
+    </Link>
   );
 }

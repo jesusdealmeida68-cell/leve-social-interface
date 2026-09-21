@@ -1,12 +1,12 @@
 import { Grid3x3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { me, posts, profileCover, type Post } from "./data";
+import { me, posts, profileCover } from "./data";
 import { Avatar, formatCount, PostThumb } from "./primitives";
 
 /** As publicações do perfil aparecem numa grelha de 2 colunas. */
 const myPosts = posts.map((post) => ({ ...post, author: me }));
 
-export function Profile({ onPost }: { onPost: (post: Post) => void }) {
+export function Profile() {
   return (
     <div className="mx-auto max-w-[900px] pb-8">
       <div className="relative h-40 overflow-hidden sm:h-56 sm:rounded-b-[2rem]">
@@ -57,7 +57,7 @@ export function Profile({ onPost }: { onPost: (post: Post) => void }) {
 
       <div className="grid grid-cols-2 gap-3 px-4 sm:px-8">
         {myPosts.map((post) => (
-          <PostThumb key={post.id} post={post} onOpen={() => onPost(post)} />
+          <PostThumb key={post.id} post={post} />
         ))}
       </div>
     </div>

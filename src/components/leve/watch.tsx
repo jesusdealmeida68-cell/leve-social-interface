@@ -2,18 +2,18 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { CommentsSection } from "./overlays";
 import { Avatar, Logo } from "./primitives";
-import { getPostById, videoPosts, type Post } from "./data";
+import { getPostById, posts, type Post } from "./data";
 import { VideoPlayer } from "./video-player";
 
 /**
- * Página de assistir vídeo: o vídeo aberto e, se houver outros, aparecem
- * empilhados na vertical logo a seguir. Os comentários só aparecem no
- * fim, depois de todos os vídeos.
+ * Página de abrir uma publicação (foto ou vídeo): a publicação aberta e as
+ * outras aparecem empilhadas na vertical logo a seguir — a mesma página serve
+ * para fotos e para vídeos. Os comentários só aparecem no fim.
  */
 export function Watch({ postId }: { postId: number }) {
   const main = getPostById(postId);
-  const others = videoPosts.filter((post) => post.id !== postId);
-  const queue = main?.video ? [main, ...others] : others;
+  const others = posts.filter((post) => post.id !== postId);
+  const queue = main ? [main, ...others] : others;
   const commentsFor = main ?? queue[0];
 
   return (
@@ -31,13 +31,13 @@ export function Watch({ postId }: { postId: number }) {
 
       {!commentsFor ? (
         <p className="p-6 text-center text-sm text-muted-foreground">
-          Este vídeo já não está disponível.
+          Esta publicação já não está disponível.
         </p>
       ) : (
         <>
           <div className="divide-y divide-border">
             {queue.map((post) => (
-              <VideoBlock key={post.id} post={post} />
+              <MediaBlock key={post.id} post={post} />
             ))}
           </div>
 
@@ -51,18 +51,26 @@ export function Watch({ postId }: { postId: number }) {
   );
 }
 
-function VideoBlock({ post }: { post: Post }) {
-  if (!post.video) return null;
-
+function MediaBlock({ post }: { post: Post }) {
   return (
     <article className="py-4 first:pt-0">
-      <VideoPlayer
-        src={post.video}
-        poster={post.image}
-        durationHint={post.duration}
-        label={`Vídeo de ${post.author.name}`}
-        className="aspect-[4/5] w-full"
-      />
+      {post.video ? (
+        <VideoPlayer
+          src={post.video}
+          poster={post.image}
+          durationHint={post.duration}
+          label={`Vídeo de ${post.author.name}`}
+          className="aspect-[4/5] w-full"
+        />
+      ) : (
+        <img
+          src={post.image}
+          alt={`Publicação de ${post.author.name}`}
+          className="aspect-[4/5] w-full object-cover"
+          width={1200}
+          height={1504}
+        />
+      )}
       <div className="flex items-center gap-3 px-4 pt-3">
         <Avatar person={post.author} size="sm" />
         <div className="min-w-0 flex-1 leading-tight">
