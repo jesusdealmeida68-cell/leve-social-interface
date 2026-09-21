@@ -1,4 +1,4 @@
-import { Heart, ImagePlus, MessageCircle, Plus, Send, Video as VideoIcon, X } from "lucide-react";
+import { Heart, ImagePlus, MessageCircle, Send, Video as VideoIcon, X } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,7 +43,8 @@ type Picked = { id: string; file: File; url: string; kind: "image" | "video" };
 function ComposerBody({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   const [picked, setPicked] = useState<Picked[]>([]);
   const [caption, setCaption] = useState("");
@@ -92,7 +93,6 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
       kind: file.type.startsWith("video/") ? "video" : "image",
     }));
     setPicked((current) => [...current, ...added]);
-    if (inputRef.current) inputRef.current.value = "";
   };
 
   const remove = (id: string) => {
@@ -134,32 +134,72 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
       <DialogHeader className="text-left">
         <DialogTitle className="font-display text-xl">Nova publicação</DialogTitle>
         <DialogDescription>
-          Junta várias fotos e vídeos na mesma publicação, com legenda opcional.
+          Várias fotos e vídeos na mesma publicação, com legenda opcional.
         </DialogDescription>
       </DialogHeader>
 
+      {/* Dois seletores: assim o telemóvel abre a galeria já com escolha múltipla, de fotos ou de vídeos. */}
       <input
-        ref={inputRef}
+        ref={photoRef}
         type="file"
-        accept="image/*,video/*"
+        accept="image/*"
         multiple
         className="hidden"
-        onChange={(event) => addFiles(event.target.files)}
+        onChange={(event) => {
+          addFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <input
+        ref={videoRef}
+        type="file"
+        accept="video/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          addFiles(event.target.files);
+          event.target.value = "";
+        }}
       />
 
-      <div className="mt-4">
+      <div
+        className="mt-4"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          addFiles(event.dataTransfer.files);
+        }}
+      >
         {picked.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="grid aspect-[4/3] w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-secondary/60 text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
-              <ImagePlus className="size-6" />
-            </span>
-            <span className="text-sm font-semibold">Adicionar fotos e vídeos</span>
-            <span className="text-xs">Até {MAX_POST_MEDIA} ficheiros, misturados se quiseres</span>
-          </button>
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                className="grid aspect-[4/3] place-items-center gap-1 rounded-2xl border-2 border-dashed border-border bg-secondary/60 text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+                  <ImagePlus className="size-6" />
+                </span>
+                <span className="text-sm font-semibold">Fotos</span>
+                <span className="text-xs">Escolhe várias</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => videoRef.current?.click()}
+                className="grid aspect-[4/3] place-items-center gap-1 rounded-2xl border-2 border-dashed border-border bg-secondary/60 text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+                  <VideoIcon className="size-6" />
+                </span>
+                <span className="text-sm font-semibold">Vídeos</span>
+                <span className="text-xs">Escolhe vários</span>
+              </button>
+            </div>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Podes juntar fotos e vídeos na mesma publicação (até {MAX_POST_MEDIA}).
+            </p>
+          </>
         ) : (
           <>
             <ul className="grid grid-cols-3 gap-2">
@@ -194,23 +234,32 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
                   )}
                 </li>
               ))}
-              {picked.length < MAX_POST_MEDIA && (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => inputRef.current?.click()}
-                    disabled={publish.isPending}
-                    aria-label="Adicionar mais fotos ou vídeos"
-                    className="grid aspect-square w-full place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                  >
-                    <Plus className="size-6" />
-                  </button>
-                </li>
-              )}
             </ul>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {picked.length} de {MAX_POST_MEDIA} ficheiros
-            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={publish.isPending || picked.length >= MAX_POST_MEDIA}
+                onClick={() => photoRef.current?.click()}
+              >
+                <ImagePlus className="size-4" />
+                Mais fotos
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={publish.isPending || picked.length >= MAX_POST_MEDIA}
+                onClick={() => videoRef.current?.click()}
+              >
+                <VideoIcon className="size-4" />
+                Mais vídeos
+              </Button>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {picked.length} de {MAX_POST_MEDIA}
+              </span>
+            </div>
           </>
         )}
       </div>
