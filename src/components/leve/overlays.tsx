@@ -1,5 +1,7 @@
-import { Heart, ImagePlus, MessageCircle, Plus, Send, Video as VideoIcon, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Heart, ImagePlus, MessageCircle, Send, Video as VideoIcon, X } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useRef, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,16 +10,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { me, postComments, type Post } from "./data";
+import { useAuth } from "@/lib/auth";
+import {
+  addComment,
+  createPost,
+  listComments,
+  timeAgo,
+  toggleLike,
+  uploadMedia,
+  type Post,
+} from "@/lib/leve";
 import { ActionButton, Avatar, PersonLink, formatCount } from "./primitives";
 
 /* ------------------------------ Criar ------------------------------ */
 
 export type ComposerMode = "post" | null;
-
-const MAX_MEDIA = 10;
-
-type MediaItem = { id: string; url: string; kind: "image" | "video" };
 
 export function Composer({ mode, onClose }: { mode: ComposerMode; onClose: () => void }) {
   return (
@@ -31,65 +38,90 @@ export function Composer({ mode, onClose }: { mode: ComposerMode; onClose: () =>
 }
 
 function ComposerBody({ onClose }: { onClose: () => void }) {
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Liberta a memória das pré-visualizações quando o diálogo fecha.
-  useEffect(() => {
-    return () => {
-      for (const item of media) URL.revokeObjectURL(item.url);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{ url: string; kind: "image" | "video" } | null>(null);
+  const [caption, setCaption] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const addFiles = (files: FileList | null) => {
-    if (!files) return;
-    const next: MediaItem[] = Array.from(files)
-      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
-      .slice(0, Math.max(0, MAX_MEDIA - media.length))
-      .map((file) => ({
-        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
-        url: URL.createObjectURL(file),
-        kind: file.type.startsWith("video/") ? "video" : "image",
-      }));
-    setMedia((items) => [...items, ...next]);
+  const publish = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Precisas de entrar para publicar.");
+      let mediaUrl: string | null = null;
+      let mediaType: "image" | "video" = "image";
+      if (file) {
+        const uploaded = await uploadMedia(file, user.id);
+        mediaUrl = uploaded.url;
+        mediaType = uploaded.type;
+      }
+      await createPost({ userId: user.id, caption, mediaUrl, mediaType });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["posts-by-user"] });
+      onClose();
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Algo correu mal."),
+  });
+
+  const pick = (selected: File | null) => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    if (!selected) {
+      setFile(null);
+      setPreview(null);
+      return;
+    }
+    const kind = selected.type.startsWith("video/") ? "video" : "image";
+    setFile(selected);
+    setPreview({ url: URL.createObjectURL(selected), kind });
   };
 
-  const removeItem = (id: string) => {
-    setMedia((items) => {
-      const target = items.find((item) => item.id === id);
-      if (target) URL.revokeObjectURL(target.url);
-      return items.filter((item) => item.id !== id);
-    });
-  };
-
-  const publish = (event: FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (media.length === 0) return;
-    onClose();
+    setError(null);
+    if (!file && !caption.trim()) {
+      setError("Adiciona uma foto, um vídeo ou escreve algo.");
+      return;
+    }
+    publish.mutate();
   };
+
+  if (!user) {
+    return (
+      <div className="p-8 text-center">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl">Entra para publicar</DialogTitle>
+          <DialogDescription>Precisas de uma conta para criar publicações.</DialogDescription>
+        </DialogHeader>
+        <Button asChild className="mt-4">
+          <Link to="/entrar" onClick={onClose}>
+            Entrar
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={publish} className="p-5">
+    <form onSubmit={submit} className="p-5">
       <DialogHeader className="text-left">
         <DialogTitle className="font-display text-xl">Nova publicação</DialogTitle>
-        <DialogDescription>Junta fotos e vídeos numa só publicação.</DialogDescription>
+        <DialogDescription>Uma foto ou vídeo, com legenda opcional.</DialogDescription>
       </DialogHeader>
 
       <input
         ref={inputRef}
         type="file"
         accept="image/*,video/*"
-        multiple
         className="hidden"
-        onChange={(event) => {
-          addFiles(event.target.files);
-          event.target.value = "";
-        }}
+        onChange={(event) => pick(event.target.files?.[0] ?? null)}
       />
 
       <div className="mt-4">
-        {media.length === 0 ? (
+        {!preview ? (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -98,61 +130,52 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
             <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
               <ImagePlus className="size-6" />
             </span>
-            <span className="text-sm font-semibold">Adicionar fotos e vídeos</span>
-            <span className="text-xs">Podes escolher quantas quiseres, juntas</span>
+            <span className="text-sm font-semibold">Adicionar foto ou vídeo</span>
           </button>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {media.map((item) => (
-              <div
-                key={item.id}
-                className="group relative aspect-square overflow-hidden rounded-xl bg-secondary"
-              >
-                {item.kind === "video" ? (
-                  <video src={item.url} muted playsInline className="size-full object-cover" />
-                ) : (
-                  <img src={item.url} alt="" className="size-full object-cover" />
-                )}
-                {item.kind === "video" && (
-                  <span className="absolute bottom-1.5 left-1.5 grid size-5 place-items-center rounded-full bg-black/60 text-white">
-                    <VideoIcon className="size-3" />
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  aria-label="Remover"
-                  className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-black/60 text-white transition-transform hover:bg-black/75 active:scale-90"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ))}
-
-            {media.length < MAX_MEDIA && (
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                aria-label="Adicionar mais"
-                className="grid aspect-square place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Plus className="size-6" />
-              </button>
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-secondary">
+            {preview.kind === "video" ? (
+              <video
+                src={preview.url}
+                muted
+                playsInline
+                controls
+                className="size-full object-cover"
+              />
+            ) : (
+              <img src={preview.url} alt="" className="size-full object-cover" />
+            )}
+            <button
+              type="button"
+              onClick={() => pick(null)}
+              aria-label="Remover"
+              className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/60 text-white transition-transform hover:bg-black/75 active:scale-90"
+            >
+              <X className="size-4" />
+            </button>
+            {preview.kind === "video" && (
+              <span className="absolute bottom-2 left-2 grid size-6 place-items-center rounded-full bg-black/60 text-white">
+                <VideoIcon className="size-3.5" />
+              </span>
             )}
           </div>
         )}
       </div>
 
       <textarea
+        value={caption}
+        onChange={(event) => setCaption(event.target.value)}
         aria-label="Legenda"
         placeholder="Escreve uma legenda (opcional)..."
         className="mt-4 min-h-20 w-full resize-none rounded-2xl bg-secondary p-4 text-[15px] leading-6 outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
       />
 
+      {error && <p className="mt-2 text-sm font-medium text-destructive">{error}</p>}
+
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Visível para todos</p>
-        <Button type="submit" disabled={media.length === 0}>
-          Publicar
+        <Button type="submit" disabled={publish.isPending}>
+          {publish.isPending ? "A publicar..." : "Publicar"}
         </Button>
       </div>
     </form>
@@ -161,18 +184,46 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
 
 /* ------------------------------ Publicação ------------------------------ */
 
-/** Curtir/comentar + lista de comentários + campo para escrever. Usado no detalhe da publicação e na página de assistir vídeo. */
+/** Curtir/comentar + lista de comentários + campo para escrever. Usado na página de assistir vídeo. */
 export function CommentsSection({ post }: { post: Post }) {
-  const [liked, setLiked] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
-  const [extra, setExtra] = useState<string[]>([]);
+
+  const { data: comments } = useQuery({
+    queryKey: ["comments", post.id],
+    queryFn: () => listComments(post.id),
+  });
+
+  const like = useMutation({
+    mutationFn: (next: boolean) => toggleLike(post.id, user!.id, next),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+      queryClient.invalidateQueries({ queryKey: ["posts-by-user"] });
+    },
+  });
+
+  const send = useMutation({
+    mutationFn: (text: string) => addComment(post.id, user!.id, text),
+    onSuccess: () => {
+      setComment("");
+      queryClient.invalidateQueries({ queryKey: ["comments", post.id] });
+      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+    },
+  });
+
+  const requireAuth = () => {
+    if (!user) navigate({ to: "/entrar" });
+    return Boolean(user);
+  };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const text = comment.trim();
-    if (!text) return;
-    setExtra((items) => [...items, text]);
-    setComment("");
+    if (!text || !requireAuth()) return;
+    send.mutate(text);
   };
 
   return (
@@ -180,42 +231,46 @@ export function CommentsSection({ post }: { post: Post }) {
       <div className="mt-4 flex items-center gap-1 pl-1">
         <ActionButton
           label="Curtir"
-          pressed={liked}
-          active={liked}
+          pressed={post.likedByMe}
+          active={post.likedByMe}
           tone="like"
-          count={formatCount(post.likes + (liked ? 1 : 0))}
-          onClick={() => setLiked(!liked)}
+          count={formatCount(post.likes)}
+          onClick={() => requireAuth() && like.mutate(!post.likedByMe)}
         >
-          <Heart className="size-[22px]" strokeWidth={1.8} fill={liked ? "currentColor" : "none"} />
+          <Heart
+            className="size-[22px]"
+            strokeWidth={1.8}
+            fill={post.likedByMe ? "currentColor" : "none"}
+          />
         </ActionButton>
-        <ActionButton label="Comentários" count={formatCount(post.comments + extra.length)}>
+        <ActionButton label="Comentários" count={formatCount(post.comments)}>
           <MessageCircle className="size-[22px]" strokeWidth={1.8} />
         </ActionButton>
       </div>
 
       <ul className="mt-4 space-y-4 border-t border-border pt-4">
-        {postComments.map((item) => (
-          <li key={item.person.handle} className="flex items-start gap-3">
-            <PersonLink person={item.person}>
-              <Avatar person={item.person} size="sm" />
-            </PersonLink>
-            <p className="min-w-0 text-sm leading-5">
-              <PersonLink person={item.person} className="inline hover:underline">
-                <strong className="mr-1.5 font-bold">{item.person.handle}</strong>
+        {comments && comments.length > 0 ? (
+          comments.map((item) => (
+            <li key={item.id} className="flex items-start gap-3">
+              <PersonLink person={item.author}>
+                <Avatar person={item.author} size="sm" />
               </PersonLink>
-              {item.text}
-            </p>
+              <p className="min-w-0 break-words text-sm leading-5">
+                <PersonLink person={item.author} className="inline hover:underline">
+                  <strong className="mr-1.5 font-bold">@{item.author.username}</strong>
+                </PersonLink>
+                {item.text}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {timeAgo(item.created_at)}
+                </span>
+              </p>
+            </li>
+          ))
+        ) : (
+          <li className="py-2 text-center text-sm text-muted-foreground">
+            Ainda sem comentários. Sê a primeira pessoa a comentar.
           </li>
-        ))}
-        {extra.map((text, index) => (
-          <li key={`${index}-${text}`} className="flex items-start gap-3">
-            <Avatar person={me} size="sm" />
-            <p className="min-w-0 break-words text-sm leading-5">
-              <strong className="mr-1.5 font-bold">{me.handle}</strong>
-              {text}
-            </p>
-          </li>
-        ))}
+        )}
       </ul>
 
       <form
@@ -232,7 +287,7 @@ export function CommentsSection({ post }: { post: Post }) {
         <button
           type="submit"
           aria-label="Enviar comentário"
-          disabled={!comment.trim()}
+          disabled={!comment.trim() || send.isPending}
           className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-[opacity,transform] hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 disabled:bg-accent disabled:text-muted-foreground"
         >
           <Send className="size-[18px]" />

@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart, Images, MessageCircle, Play } from "lucide-react";
+import { Heart, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { profilePath, type Person, type Post } from "./data";
+import type { Post, Profile } from "@/lib/leve";
 import leveIcon from "@/assets/leve-icon.png";
 
 export function formatCount(value: number) {
@@ -58,13 +58,13 @@ export function Avatar({
   size = "md",
   className,
 }: {
-  person: Person;
+  person: Profile;
   size?: keyof typeof avatarSizes;
   className?: string;
 }) {
   const { box, text } = avatarSizes[size];
 
-  if (!person.image) {
+  if (!person.avatar_url) {
     const initials = person.name
       .split(" ")
       .map((word) => word.charAt(0))
@@ -88,7 +88,7 @@ export function Avatar({
 
   return (
     <img
-      src={person.image}
+      src={person.avatar_url}
       alt={`Foto de ${person.name}`}
       className={cn(box, "shrink-0 rounded-full object-cover", className)}
       width={96}
@@ -103,15 +103,19 @@ export function PersonLink({
   className,
   children,
 }: {
-  person: Person;
+  person: Profile;
   className?: string;
   children: ReactNode;
 }) {
   return (
     <Link
-      to={profilePath(person)}
+      to="/perfil/$handle"
+      params={{ handle: person.username }}
       aria-label={`Ver perfil de ${person.name}`}
-      className={cn("min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
+      className={cn(
+        "min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
     >
       {children}
     </Link>
@@ -124,16 +128,18 @@ export function IconButton({
   onClick,
   active = false,
   className,
+  type = "button",
 }: {
   label: string;
   children: ReactNode;
   onClick?: () => void;
   active?: boolean;
   className?: string;
+  type?: "button" | "submit";
 }) {
   return (
     <Button
-      type="button"
+      type={type}
       variant="ghost"
       size="icon"
       aria-label={label}
@@ -150,7 +156,7 @@ export function IconButton({
   );
 }
 
-/** Botão de ação de uma publicação (curtir, comentar, guardar…). Compacto, nunca esticado. */
+/** Botão de ação de uma publicação (curtir, comentar…). Compacto, nunca esticado. */
 export function ActionButton({
   label,
   count,
@@ -190,28 +196,31 @@ export function ActionButton({
 
 /** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Abre sempre a mesma página de visualização. */
 export function PostThumb({ post }: { post: Post }) {
-  const content = (
-    <>
-      <img
-        src={post.image}
-        alt=""
-        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-        loading="lazy"
-        width={600}
-        height={750}
-      />
+  if (!post.media_url) return null;
 
-      {post.video && (
-        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
-          <Play className="size-3 fill-current" aria-hidden="true" />
-          {post.duration}
-        </span>
+  return (
+    <Link
+      to="/video/$postId"
+      params={{ postId: post.id }}
+      aria-label={`Abrir publicação: ${post.caption || "sem legenda"}`}
+      className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {post.media_type === "video" ? (
+        <video src={post.media_url} muted playsInline className="size-full object-cover" />
+      ) : (
+        <img
+          src={post.media_url}
+          alt=""
+          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+          width={600}
+          height={750}
+        />
       )}
 
-      {!post.video && post.mediaCount && post.mediaCount > 1 && (
+      {post.media_type === "video" && (
         <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
-          <Images className="size-3" aria-hidden="true" />
-          {post.mediaCount}
+          <Play className="size-3 fill-current" aria-hidden="true" />
         </span>
       )}
 
@@ -228,17 +237,6 @@ export function PostThumb({ post }: { post: Post }) {
           {formatCount(post.comments)}
         </span>
       </span>
-    </>
-  );
-
-  return (
-    <Link
-      to="/video/$postId"
-      params={{ postId: String(post.id) }}
-      aria-label={`Abrir publicação: ${post.caption}`}
-      className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      {content}
     </Link>
   );
 }

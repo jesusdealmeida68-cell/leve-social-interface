@@ -17,5 +17,5 @@ export const Route = createFileRoute("/perfil/$handle")({
 
 function RouteComponent() {
   const { handle } = Route.useParams();
-  return <LeveApp section="profile" profileHandle={`@${handle}`} />;
+  return <LeveApp section="profile" profileHandle={handle} />;
 }

@@ -17,5 +17,5 @@ export const Route = createFileRoute("/video/$postId")({
 
 function RouteComponent() {
   const { postId } = Route.useParams();
-  return <Watch postId={Number(postId)} />;
+  return <Watch postId={postId} />;
 }

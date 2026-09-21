@@ -1,7 +1,9 @@
 import { Bell, Search } from "lucide-react";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { posts, suggestions, trending } from "./data";
+import { useAuth } from "@/lib/auth";
+import { listFeed, listSuggestions, toggleFollow, type Profile } from "@/lib/leve";
 import { Avatar, IconButton, PersonLink, PostThumb } from "./primitives";
 
 export function Feed({
@@ -11,11 +13,13 @@ export function Feed({
   notificationsOpen: boolean;
   onNotifications: () => void;
 }) {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
-  const term = query.trim().toLowerCase();
-  const filtered = posts.filter((post) =>
-    `${post.author.name} ${post.caption}`.toLowerCase().includes(term),
-  );
+
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["feed", user?.id ?? null, query],
+    queryFn: () => listFeed(user?.id ?? null, query),
+  });
 
   return (
     <div className="mx-auto grid max-w-[600px] xl:max-w-[960px] xl:grid-cols-[minmax(0,600px)_320px] xl:gap-10">
@@ -43,9 +47,15 @@ export function Feed({
           </div>
         </div>
 
-        {filtered.length ? (
+        {isLoading ? (
           <div className="grid grid-cols-2 gap-3 px-4 pb-10 pt-4">
-            {filtered.map((post) => (
+            {Array.from({ length: 6 }, (_, index) => (
+              <div key={index} className="aspect-[4/5] animate-pulse rounded-2xl bg-secondary" />
+            ))}
+          </div>
+        ) : posts && posts.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 px-4 pb-10 pt-4">
+            {posts.map((post) => (
               <PostThumb key={post.id} post={post} />
             ))}
           </div>
@@ -53,9 +63,11 @@ export function Feed({
           <div className="mx-4 mt-4 grid min-h-64 place-items-center rounded-3xl border border-dashed border-border text-center">
             <div>
               <Search className="mx-auto size-6 text-muted-foreground" />
-              <p className="mt-3 text-sm font-semibold">Nada encontrado</p>
+              <p className="mt-3 text-sm font-semibold">
+                {query ? "Nada encontrado" : "Ainda não há publicações"}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tenta outro nome ou outra palavra.
+                {query ? "Tenta outro nome ou outra palavra." : "Sê a primeira pessoa a publicar."}
               </p>
             </div>
           </div>
@@ -67,11 +79,24 @@ export function Feed({
 }
 
 function RightRail() {
-  const [followed, setFollowed] = useState<string[]>([]);
-  const toggle = (handle: string) =>
-    setFollowed((items) =>
-      items.includes(handle) ? items.filter((item) => item !== handle) : [...items, handle],
-    );
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: suggestions } = useQuery({
+    queryKey: ["suggestions", user?.id ?? null],
+    queryFn: () => listSuggestions(user?.id ?? null),
+  });
+
+  const follow = useMutation({
+    mutationFn: ({ target, next }: { target: Profile; next: boolean }) =>
+      toggleFollow(user!.id, target.id, next),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    },
+  });
+
+  if (!suggestions || suggestions.length === 0) return <aside className="hidden xl:block" />;
 
   return (
     <aside className="hidden xl:block" aria-label="Sugestões">
@@ -79,37 +104,28 @@ function RightRail() {
         <section className="rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-base font-semibold">Quem seguir</h2>
           <ul className="mt-4 space-y-4">
-            {suggestions.map((person) => {
-              const isFollowed = followed.includes(person.handle);
-              return (
-                <li key={person.handle} className="flex items-center gap-3">
-                  <PersonLink person={person}>
-                    <Avatar person={person} size="sm" />
-                  </PersonLink>
-                  <PersonLink person={person} className="min-w-0 flex-1 leading-tight hover:underline">
-                    <p className="truncate text-sm font-bold">{person.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{person.handle}</p>
-                  </PersonLink>
+            {suggestions.map((person) => (
+              <li key={person.id} className="flex items-center gap-3">
+                <PersonLink person={person}>
+                  <Avatar person={person} size="sm" />
+                </PersonLink>
+                <PersonLink
+                  person={person}
+                  className="min-w-0 flex-1 leading-tight hover:underline"
+                >
+                  <p className="truncate text-sm font-bold">{person.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">@{person.username}</p>
+                </PersonLink>
+                {user && (
                   <Button
-                    variant={isFollowed ? "secondary" : "outline"}
+                    variant="outline"
                     size="sm"
-                    onClick={() => toggle(person.handle)}
+                    disabled={follow.isPending}
+                    onClick={() => follow.mutate({ target: person, next: true })}
                   >
-                    {isFollowed ? "A seguir" : "Seguir"}
+                    Seguir
                   </Button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <section className="rounded-3xl border border-border bg-card p-5">
-          <h2 className="font-display text-base font-semibold">Em destaque</h2>
-          <ul className="mt-4 space-y-4">
-            {trending.map((item) => (
-              <li key={item.tag}>
-                <p className="text-sm font-semibold">{item.tag}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                )}
               </li>
             ))}
           </ul>

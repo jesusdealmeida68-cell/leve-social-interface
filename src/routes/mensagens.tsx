@@ -3,7 +3,7 @@ import { LeveApp } from "@/components/leve-app";
 
 export const Route = createFileRoute("/mensagens")({
   validateSearch: (search: Record<string, unknown>) => ({
-    to: typeof search.to === "string" ? search.to : undefined,
+    to: typeof search["to"] === "string" ? search["to"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -20,5 +20,5 @@ export const Route = createFileRoute("/mensagens")({
 
 function RouteComponent() {
   const { to } = Route.useSearch();
-  return <LeveApp section="messages" messageTo={to ? `@${to}` : undefined} />;
+  return <LeveApp section="messages" messageTo={to} />;
 }

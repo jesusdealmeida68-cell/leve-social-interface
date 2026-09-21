@@ -1,10 +1,33 @@
-import { Link } from "@tanstack/react-router";
-import { Lock, Mail } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Lock, Phone } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 import { Logo } from "./primitives";
 
-/** Ecrã de entrada. Apenas visual, sem autenticação real. */
+/** Ecrã de entrada: número de telefone + palavra-passe, ligado à autenticação real. */
 export function Auth() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await signIn(phone, password);
+      navigate({ to: "/" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Algo correu mal. Tenta novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="grid min-h-dvh place-items-center bg-background px-4 py-10 text-foreground">
       <div className="w-full max-w-sm">
@@ -13,15 +36,32 @@ export function Auth() {
           <p className="text-sm text-muted-foreground">Conecte-se. Assista. Curta.</p>
         </div>
 
-        <form
-          onSubmit={(event) => event.preventDefault()}
-          className="space-y-3 rounded-3xl border border-border bg-card p-5"
-        >
-          <Field icon={Mail} label="E-mail" type="email" placeholder="exemplo@teuemail.com" />
-          <Field icon={Lock} label="Palavra-passe" type="password" placeholder="••••••••" />
+        <form onSubmit={submit} className="space-y-3 rounded-3xl border border-border bg-card p-5">
+          <Field
+            icon={Phone}
+            label="Número de telefone"
+            type="tel"
+            placeholder="9XX XXX XXX"
+            value={phone}
+            onChange={setPhone}
+          />
+          <Field
+            icon={Lock}
+            label="Palavra-passe"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={setPassword}
+          />
 
-          <Button type="submit" className="mt-2 h-11 w-full rounded-full text-[15px]">
-            Entrar
+          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="mt-2 h-11 w-full rounded-full text-[15px]"
+          >
+            {loading ? "A entrar..." : "Entrar"}
           </Button>
         </form>
 
@@ -47,11 +87,15 @@ function Field({
   label,
   type,
   placeholder,
+  value,
+  onChange,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   type: string;
   placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <label className="block">
@@ -60,6 +104,8 @@ function Field({
         <Icon className="size-4 shrink-0 text-muted-foreground" />
         <input
           type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           required
           className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"

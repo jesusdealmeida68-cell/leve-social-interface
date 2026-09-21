@@ -87,9 +87,7 @@ export function clockTime(iso: string): string {
 
 export function extractTags(caption: string): string[] {
   return Array.from(
-    new Set(
-      (caption.match(/#[\p{L}\p{N}_]+/gu) ?? []).map((tag) => tag.slice(1).toLowerCase()),
-    ),
+    new Set((caption.match(/#[\p{L}\p{N}_]+/gu) ?? []).map((tag) => tag.slice(1).toLowerCase())),
   );
 }
 
@@ -99,7 +97,14 @@ function fromRows<T extends { id: string }>(rows: T[]): Map<string, T> {
 
 /** Perfil de reserva quando o autor já não existe. */
 function unknownProfile(id: string): Profile {
-  return { id, username: "desconhecido", name: "Conta removida", bio: null, avatar_url: null, cover_url: null };
+  return {
+    id,
+    username: "desconhecido",
+    name: "Conta removida",
+    bio: null,
+    avatar_url: null,
+    cover_url: null,
+  };
 }
 
 /* ------------------------------ Ficheiros ------------------------------ */
@@ -115,7 +120,7 @@ export async function uploadMedia(
 
   const { error } = await supabase.storage.from("media").upload(path, file, {
     cacheControl: "31536000",
-    contentType: file.type || undefined,
+    ...(file.type ? { contentType: file.type } : {}),
   });
   if (error) throw error;
 
@@ -213,7 +218,9 @@ export async function listSuggestions(viewerId: string | null): Promise<Profile[
       .eq("follower_id", viewerId);
     followed = (rows ?? []).map((row) => row.following_id);
   }
-  return (data ?? []).filter((item) => item.id !== viewerId && !followed.includes(item.id)).slice(0, 5);
+  return (data ?? [])
+    .filter((item) => item.id !== viewerId && !followed.includes(item.id))
+    .slice(0, 5);
 }
 
 export async function searchProfiles(term: string): Promise<Profile[]> {
@@ -274,7 +281,9 @@ export async function listFeed(viewerId: string | null, search = ""): Promise<Po
   const term = search.trim().replace(/^#/, "");
   if (term) {
     const authors = await searchProfiles(term);
-    const authorFilter = authors.length ? `,user_id.in.(${authors.map((a) => a.id).join(",")})` : "";
+    const authorFilter = authors.length
+      ? `,user_id.in.(${authors.map((a) => a.id).join(",")})`
+      : "";
     query = query.or(`caption.ilike.%${term}%,tags.cs.{${term.toLowerCase()}}${authorFilter}`);
   }
 

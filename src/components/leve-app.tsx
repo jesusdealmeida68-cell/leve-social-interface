@@ -16,9 +16,9 @@ export function LeveApp({
 }: {
   section: Section;
   /** Perfil a mostrar quando a secção é "profile"; sem isto mostra o próprio perfil. */
-  profileHandle?: string;
+  profileHandle?: string | undefined;
   /** Abre logo esta conversa quando a secção é "messages" (vindo do botão Mensagem do perfil). */
-  messageTo?: string;
+  messageTo?: string | undefined;
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [composer, setComposer] = useState<ComposerMode>(null);

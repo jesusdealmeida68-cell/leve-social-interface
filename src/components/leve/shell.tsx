@@ -1,19 +1,18 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import {
-  Bell,
-  Home,
-  MessagesSquare,
-  MoreHorizontal,
-  PenLine,
-  Plus,
-  UserRound,
-  X,
-} from "lucide-react";
+import { Bell, Home, LogOut, MessagesSquare, PenLine, Plus, UserRound, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { me, notifications, type Section } from "./data";
+import { useAuth } from "@/lib/auth";
+import {
+  countUnreadMessages,
+  countUnreadNotifications,
+  listNotifications,
+  timeAgo,
+} from "@/lib/leve";
 import { Avatar, IconButton, Logo, PersonLink } from "./primitives";
+import type { Section } from "./data";
 
 export const nav = [
   { key: "feed", label: "Feed", path: "/", icon: Home },
@@ -23,6 +22,15 @@ export const nav = [
 
 /** Navegação lateral do desktop. */
 export function Sidebar({ section, onCreate }: { section: Section; onCreate: () => void }) {
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { data: unreadMessages } = useQuery({
+    queryKey: ["unread-messages", user?.id ?? null],
+    queryFn: () => countUnreadMessages(user!.id),
+    enabled: Boolean(user),
+    refetchInterval: 15000,
+  });
+
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border px-4 py-7 lg:flex">
       <div className="flex items-center justify-between gap-2 px-3">
@@ -32,9 +40,11 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
         >
           <Logo />
         </Link>
-        <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
-          <Link to="/entrar">Entrar</Link>
-        </Button>
+        {!user && (
+          <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
+            <Link to="/entrar">Entrar</Link>
+          </Button>
+        )}
       </div>
 
       <nav className="mt-10 flex flex-col gap-1" aria-label="Navegação principal">
@@ -58,7 +68,7 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
                 strokeWidth={selected ? 2.3 : 1.8}
               />
               <span>{item.label}</span>
-              {item.key === "messages" && (
+              {item.key === "messages" && Boolean(unreadMessages) && (
                 <span
                   className="ml-auto size-2 rounded-full bg-primary"
                   aria-label="Mensagens por ler"
@@ -74,23 +84,38 @@ export function Sidebar({ section, onCreate }: { section: Section; onCreate: () 
         Criar publicação
       </Button>
 
-      <Link
-        to="/perfil"
-        className="mt-auto flex items-center gap-3 rounded-full p-2 pr-4 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Avatar person={me} size="md" />
-        <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-sm font-bold">{me.name}</span>
-          <span className="block truncate text-[13px] text-muted-foreground">{me.handle}</span>
-        </span>
-        <MoreHorizontal className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      </Link>
+      {user && profile && (
+        <div className="mt-auto flex items-center gap-1 rounded-full pr-1 transition-colors hover:bg-accent/60">
+          <Link
+            to="/perfil"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-full p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Avatar person={profile} size="md" />
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block truncate text-sm font-bold">{profile.name}</span>
+              <span className="block truncate text-[13px] text-muted-foreground">
+                @{profile.username}
+              </span>
+            </span>
+          </Link>
+          <IconButton
+            label="Sair da conta"
+            onClick={() => {
+              signOut();
+              navigate({ to: "/" });
+            }}
+          >
+            <LogOut className="size-4" />
+          </IconButton>
+        </div>
+      )}
     </aside>
   );
 }
 
 /** Cabeçalho do telemóvel: logotipo, navegação e ações, tudo fixo no topo. */
 export function MobileHeader() {
+  const { user } = useAuth();
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">
       <div className="flex h-14 items-center justify-between px-4">
@@ -100,9 +125,11 @@ export function MobileHeader() {
         >
           <Logo />
         </Link>
-        <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
-          <Link to="/entrar">Entrar</Link>
-        </Button>
+        {!user && (
+          <Button asChild size="sm" className="h-8 rounded-full px-4 text-[13px]">
+            <Link to="/entrar">Entrar</Link>
+          </Button>
+        )}
       </div>
     </header>
   );
@@ -120,6 +147,20 @@ export function MobileTabBar({
   onNotifications: () => void;
   notificationsOpen: boolean;
 }) {
+  const { user, profile } = useAuth();
+  const { data: unreadMessages } = useQuery({
+    queryKey: ["unread-messages", user?.id ?? null],
+    queryFn: () => countUnreadMessages(user!.id),
+    enabled: Boolean(user),
+    refetchInterval: 15000,
+  });
+  const { data: unreadNotifications } = useQuery({
+    queryKey: ["unread-notifications", user?.id ?? null],
+    queryFn: () => countUnreadNotifications(user!.id),
+    enabled: Boolean(user),
+    refetchInterval: 15000,
+  });
+
   return (
     <nav
       aria-label="Navegação principal"
@@ -130,7 +171,12 @@ export function MobileTabBar({
           <Home className="size-[22px]" strokeWidth={section === "feed" ? 2.4 : 1.8} />
         </TabLink>
 
-        <TabLink to="/mensagens" label="Mensagens" selected={section === "messages"} badge>
+        <TabLink
+          to="/mensagens"
+          label="Mensagens"
+          selected={section === "messages"}
+          badge={Boolean(unreadMessages)}
+        >
           <MessagesSquare
             className="size-[22px]"
             strokeWidth={section === "messages" ? 2.4 : 1.8}
@@ -146,19 +192,28 @@ export function MobileTabBar({
           <Plus className="size-[26px]" strokeWidth={2.4} />
         </button>
 
-        <TabLink label="Notificações" selected={notificationsOpen} onClick={onNotifications}>
+        <TabLink
+          label="Notificações"
+          selected={notificationsOpen}
+          badge={Boolean(unreadNotifications)}
+          onClick={onNotifications}
+        >
           <Bell className="size-[22px]" strokeWidth={notificationsOpen ? 2.4 : 1.8} />
         </TabLink>
 
         <TabLink to="/perfil" label="Perfil" selected={section === "profile"}>
-          <Avatar
-            person={me}
-            size="sm"
-            className={cn(
-              "size-6 ring-2 ring-transparent transition-[box-shadow]",
-              section === "profile" && "ring-primary",
-            )}
-          />
+          {profile ? (
+            <Avatar
+              person={profile}
+              size="sm"
+              className={cn(
+                "size-6 ring-2 ring-transparent transition-[box-shadow]",
+                section === "profile" && "ring-primary",
+              )}
+            />
+          ) : (
+            <UserRound className="size-[22px]" strokeWidth={section === "profile" ? 2.4 : 1.8} />
+          )}
         </TabLink>
       </div>
     </nav>
@@ -218,7 +273,15 @@ function TabLink({
 }
 
 export function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { user } = useAuth();
+  const { data: items } = useQuery({
+    queryKey: ["notifications", user?.id ?? null],
+    queryFn: () => listNotifications(user!.id),
+    enabled: open && Boolean(user),
+  });
+
   if (!open) return null;
+
   return (
     <>
       <button
@@ -239,23 +302,41 @@ export function NotificationPanel({ open, onClose }: { open: boolean; onClose: (
           </IconButton>
         </div>
         <ul>
-          {notifications.map((item) => (
-            <li
-              key={item.person.handle}
-              className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-accent/60"
-            >
-              <PersonLink person={item.person}>
-                <Avatar person={item.person} size="sm" />
-              </PersonLink>
-              <PersonLink person={item.person} className="min-w-0 flex-1 hover:underline">
-                <p className="text-sm leading-5">
-                  <strong className="font-bold">{item.person.name.split(" ")[0]}</strong>{" "}
-                  {item.text}
-                </p>
-              </PersonLink>
-              <span className="shrink-0 text-xs text-muted-foreground">{item.time}</span>
+          {!user ? (
+            <li className="px-4 py-6 text-center text-sm text-muted-foreground">
+              Entra para ver as tuas notificações.
             </li>
-          ))}
+          ) : items && items.length > 0 ? (
+            items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-accent/60"
+              >
+                {item.actor ? (
+                  <>
+                    <PersonLink person={item.actor}>
+                      <Avatar person={item.actor} size="sm" />
+                    </PersonLink>
+                    <PersonLink person={item.actor} className="min-w-0 flex-1 hover:underline">
+                      <p className="text-sm leading-5">
+                        <strong className="font-bold">{item.actor.name.split(" ")[0]}</strong>{" "}
+                        {item.body}
+                      </p>
+                    </PersonLink>
+                  </>
+                ) : (
+                  <p className="min-w-0 flex-1 text-sm leading-5">{item.body}</p>
+                )}
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {timeAgo(item.created_at)}
+                </span>
+              </li>
+            ))
+          ) : (
+            <li className="px-4 py-6 text-center text-sm text-muted-foreground">
+              Ainda sem notificações.
+            </li>
+          )}
         </ul>
       </div>
     </>
