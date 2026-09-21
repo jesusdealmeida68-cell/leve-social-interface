@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConteudosPagosRouteImport } from './routes/conteudos-pagos'
 import { Route as CriarContaRouteImport } from './routes/criar-conta'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as MensagensRouteImport } from './routes/mensagens'
@@ -20,6 +21,11 @@ import { Route as VideoPostIdRouteImport } from './routes/video.$postId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConteudosPagosRoute = ConteudosPagosRouteImport.update({
+  id: '/conteudos-pagos',
+  path: '/conteudos-pagos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CriarContaRoute = CriarContaRouteImport.update({
@@ -55,6 +61,7 @@ const VideoPostIdRoute = VideoPostIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/conteudos-pagos': typeof ConteudosPagosRoute
   '/criar-conta': typeof CriarContaRoute
   '/entrar': typeof EntrarRoute
   '/mensagens': typeof MensagensRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/conteudos-pagos': typeof ConteudosPagosRoute
   '/criar-conta': typeof CriarContaRoute
   '/entrar': typeof EntrarRoute
   '/mensagens': typeof MensagensRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/conteudos-pagos': typeof ConteudosPagosRoute
   '/criar-conta': typeof CriarContaRoute
   '/entrar': typeof EntrarRoute
   '/mensagens': typeof MensagensRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/conteudos-pagos'
     | '/criar-conta'
     | '/entrar'
     | '/mensagens'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/conteudos-pagos'
     | '/criar-conta'
     | '/entrar'
     | '/mensagens'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/conteudos-pagos'
     | '/criar-conta'
     | '/entrar'
     | '/mensagens'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConteudosPagosRoute: typeof ConteudosPagosRoute
   CriarContaRoute: typeof CriarContaRoute
   EntrarRoute: typeof EntrarRoute
   MensagensRoute: typeof MensagensRoute
@@ -127,6 +140,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conteudos-pagos': {
+      id: '/conteudos-pagos'
+      path: '/conteudos-pagos'
+      fullPath: '/conteudos-pagos'
+      preLoaderRoute: typeof ConteudosPagosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/criar-conta': {
@@ -187,6 +207,7 @@ const PerfilRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConteudosPagosRoute: ConteudosPagosRoute,
   CriarContaRoute: CriarContaRoute,
   EntrarRoute: EntrarRoute,
   MensagensRoute: MensagensRoute,

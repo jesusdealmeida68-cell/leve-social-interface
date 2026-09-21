@@ -207,3 +207,25 @@
 #lovable-badge {
   display: none !important;
 }
+
+/* Capas abstratas da página Conteúdos pagos (só visual, sem imagens de pessoas) */
+@utility bg-paid-a {
+  background:
+    radial-gradient(110% 90% at 15% 0%, oklch(0.55 0.23 20 / 0.9), transparent 60%),
+    radial-gradient(90% 90% at 100% 100%, oklch(0.42 0.2 305 / 0.9), transparent 60%),
+    oklch(0.15 0.02 290);
+}
+
+@utility bg-paid-b {
+  background:
+    radial-gradient(110% 90% at 85% 0%, oklch(0.5 0.15 230 / 0.85), transparent 60%),
+    radial-gradient(90% 90% at 0% 100%, oklch(0.45 0.16 175 / 0.8), transparent 60%),
+    oklch(0.15 0.02 250);
+}
+
+@utility bg-paid-c {
+  background:
+    radial-gradient(110% 90% at 20% 100%, oklch(0.62 0.17 55 / 0.85), transparent 60%),
+    radial-gradient(90% 90% at 100% 0%, oklch(0.5 0.2 5 / 0.85), transparent 60%),
+    oklch(0.16 0.02 30);
+}
