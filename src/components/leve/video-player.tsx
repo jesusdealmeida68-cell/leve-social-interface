@@ -40,7 +40,12 @@ type VideoContext = Prefs & {
 };
 
 const defaults: Prefs = { muted: true, volume: 0.8, autoplay: true, loop: true, speed: 1 };
-const fallback: VideoContext = { ...defaults, activeId: null, setActiveId: () => {}, update: () => {} };
+const fallback: VideoContext = {
+  ...defaults,
+  activeId: null,
+  setActiveId: () => {},
+  update: () => {},
+};
 const VideoPrefsContext = createContext<VideoContext>(fallback);
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -61,7 +66,10 @@ export function VideoPrefsProvider({ children }: { children: ReactNode }) {
           volume: typeof saved.volume === "number" ? clamp(saved.volume, 0, 1) : current.volume,
           autoplay: typeof saved.autoplay === "boolean" ? saved.autoplay : current.autoplay,
           loop: typeof saved.loop === "boolean" ? saved.loop : current.loop,
-          speed: typeof saved.speed === "number" && (speeds as readonly number[]).includes(saved.speed) ? saved.speed : current.speed,
+          speed:
+            typeof saved.speed === "number" && (speeds as readonly number[]).includes(saved.speed)
+              ? saved.speed
+              : current.speed,
         }));
       }
     } catch {
@@ -80,8 +88,14 @@ export function VideoPrefsProvider({ children }: { children: ReactNode }) {
     }
   }, [prefs, loaded]);
 
-  const update = useCallback((patch: Partial<Prefs>) => setPrefs((current) => ({ ...current, ...patch })), []);
-  const value = useMemo<VideoContext>(() => ({ ...prefs, activeId, setActiveId, update }), [prefs, activeId, update]);
+  const update = useCallback(
+    (patch: Partial<Prefs>) => setPrefs((current) => ({ ...current, ...patch })),
+    [],
+  );
+  const value = useMemo<VideoContext>(
+    () => ({ ...prefs, activeId, setActiveId, update }),
+    [prefs, activeId, update],
+  );
 
   return <VideoPrefsContext.Provider value={value}>{children}</VideoPrefsContext.Provider>;
 }
@@ -123,7 +137,15 @@ function ControlButton({
   );
 }
 
-function SwitchRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function SwitchRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
     <button
       type="button"
@@ -133,8 +155,12 @@ function SwitchRow({ label, checked, onChange }: { label: string; checked: boole
       className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
     >
       <span>{label}</span>
-      <span className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? "bg-primary" : "bg-white/20"}`}>
-        <span className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
+      <span
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? "bg-primary" : "bg-white/20"}`}
+      >
+        <span
+          className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${checked ? "left-[18px]" : "left-0.5"}`}
+        />
       </span>
     </button>
   );
@@ -156,7 +182,15 @@ export type VideoPlayerProps = {
   autoPlayOnMount?: boolean;
 };
 
-export function VideoPlayer({ src, poster, durationHint, label, className = "", fit = "cover", autoPlayOnMount = false }: VideoPlayerProps) {
+export function VideoPlayer({
+  src,
+  poster,
+  durationHint,
+  label,
+  className = "",
+  fit = "cover",
+  autoPlayOnMount = false,
+}: VideoPlayerProps) {
   const id = useId();
   const prefs = useContext(VideoPrefsContext);
   const { update, setActiveId } = prefs;
@@ -304,7 +338,8 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
 
   const toggleFullscreen = useCallback(async () => {
     const box = boxRef.current;
-    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    const video = videoRef.current as
+      (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     if (!box) return;
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
@@ -417,7 +452,11 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       event.stopPropagation();
-      video.currentTime = clamp(video.currentTime + (event.key === "ArrowLeft" ? -5 : 5), 0, duration);
+      video.currentTime = clamp(
+        video.currentTime + (event.key === "ArrowLeft" ? -5 : 5),
+        0,
+        duration,
+      );
       setTime(video.currentTime);
     }
   };
@@ -486,7 +525,11 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
       {!playing && !waiting && (
         <span className="pointer-events-none absolute inset-0 z-[2] grid place-items-center">
           <span className="grid size-16 place-items-center rounded-full bg-black/50 text-white shadow-2xl backdrop-blur-md transition-transform group-hover/player:scale-105">
-            {restart ? <RotateCcw className="size-7" /> : <Play className="ml-1 size-7 fill-current" />}
+            {restart ? (
+              <RotateCcw className="size-7" />
+            ) : (
+              <Play className="ml-1 size-7 fill-current" />
+            )}
           </span>
         </span>
       )}
@@ -541,9 +584,21 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
           aria-label="Definições do vídeo"
           className="absolute bottom-[4.75rem] right-3 z-20 w-[15rem] max-w-[calc(100%-1.5rem)] rounded-2xl border border-white/10 bg-popover/90 p-2 text-sm text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
-          <SwitchRow label="Reprodução automática" checked={prefs.autoplay} onChange={(value) => update({ autoplay: value })} />
-          <SwitchRow label="Repetir" checked={prefs.loop} onChange={(value) => update({ loop: value })} />
-          <SwitchRow label="Som" checked={!prefs.muted} onChange={(value) => update({ muted: !value })} />
+          <SwitchRow
+            label="Reprodução automática"
+            checked={prefs.autoplay}
+            onChange={(value) => update({ autoplay: value })}
+          />
+          <SwitchRow
+            label="Repetir"
+            checked={prefs.loop}
+            onChange={(value) => update({ loop: value })}
+          />
+          <SwitchRow
+            label="Som"
+            checked={!prefs.muted}
+            onChange={(value) => update({ muted: !value })}
+          />
           <div className="px-3 pb-2 pt-3">
             <p className="text-xs text-muted-foreground">Velocidade</p>
             <div className="mt-2 grid grid-cols-4 gap-1 rounded-full bg-white/5 p-1">
@@ -584,7 +639,10 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
           className="group/bar relative flex h-5 cursor-pointer touch-none items-center focus-visible:outline-none"
         >
           <div className="relative h-1 w-full rounded-full bg-white/25 transition-[height] group-hover/bar:h-1.5 group-focus-visible/bar:h-1.5">
-            <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${percent}%` }} />
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-primary"
+              style={{ width: `${percent}%` }}
+            />
             <div
               className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-md transition-opacity group-hover/bar:opacity-100 group-focus-visible/bar:opacity-100 ${seeking ? "opacity-100" : "opacity-0"}`}
               style={{ left: `${percent}%` }}
@@ -593,8 +651,15 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
         </div>
 
         <div className="mt-0.5 flex items-center gap-1">
-          <ControlButton label={playing ? "Pausar" : restart ? "Ver de novo" : "Reproduzir"} onClick={toggle}>
-            {playing ? <Pause className="size-5 fill-current" /> : <Play className="ml-0.5 size-5 fill-current" />}
+          <ControlButton
+            label={playing ? "Pausar" : restart ? "Ver de novo" : "Reproduzir"}
+            onClick={toggle}
+          >
+            {playing ? (
+              <Pause className="size-5 fill-current" />
+            ) : (
+              <Play className="ml-0.5 size-5 fill-current" />
+            )}
           </ControlButton>
           <span className="ml-1 text-xs font-medium tabular-nums text-white/90">
             {formatTime(time)} / {duration ? formatTime(duration) : (durationHint ?? "0:00")}
@@ -617,7 +682,11 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
               className="h-1 w-20 cursor-pointer accent-primary"
             />
           </label>
-          <ControlButton label="Definições do vídeo" pressed={menu} onClick={() => setMenu((open) => !open)}>
+          <ControlButton
+            label="Definições do vídeo"
+            pressed={menu}
+            onClick={() => setMenu((open) => !open)}
+          >
             <Settings2 className="size-5" />
           </ControlButton>
           {pipReady && (
@@ -627,7 +696,10 @@ export function VideoPlayer({ src, poster, durationHint, label, className = "", 
               </ControlButton>
             </span>
           )}
-          <ControlButton label={fullscreen ? "Sair do ecrã inteiro" : "Ecrã inteiro"} onClick={() => void toggleFullscreen()}>
+          <ControlButton
+            label={fullscreen ? "Sair do ecrã inteiro" : "Ecrã inteiro"}
+            onClick={() => void toggleFullscreen()}
+          >
             {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
           </ControlButton>
         </div>

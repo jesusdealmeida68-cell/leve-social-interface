@@ -206,7 +206,12 @@ function TabLink({
   }
 
   return (
-    <Link to={to} aria-label={label} aria-current={selected ? "page" : undefined} className={className}>
+    <Link
+      to={to}
+      aria-label={label}
+      aria-current={selected ? "page" : undefined}
+      className={className}
+    >
       {content}
     </Link>
   );

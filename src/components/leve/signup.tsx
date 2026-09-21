@@ -118,8 +118,18 @@ export function SignUp() {
           <p className="mt-2 text-sm text-muted-foreground">É rápido, fácil e gratuito.</p>
 
           <form onSubmit={(event) => event.preventDefault()} className="mt-7 space-y-3">
-            <Field icon={Mail} label="O teu e-mail" type="email" placeholder="exemplo@teuemail.com" />
-            <Field icon={AtSign} label="Nome de utilizador" type="text" placeholder="ex: utilizador123" />
+            <Field
+              icon={Mail}
+              label="O teu e-mail"
+              type="email"
+              placeholder="exemplo@teuemail.com"
+            />
+            <Field
+              icon={AtSign}
+              label="Nome de utilizador"
+              type="text"
+              placeholder="ex: utilizador123"
+            />
 
             <PasswordField
               icon={Lock}

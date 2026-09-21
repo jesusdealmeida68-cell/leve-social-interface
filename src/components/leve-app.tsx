@@ -22,33 +22,33 @@ export function LeveApp({ section }: { section: Section }) {
 
   return (
     <VideoPrefsProvider>
-    <div className="min-h-dvh bg-background text-foreground">
-      <Sidebar section={section} onCreate={() => setComposer("post")} />
-      <MobileHeader />
+      <div className="min-h-dvh bg-background text-foreground">
+        <Sidebar section={section} onCreate={() => setComposer("post")} />
+        <MobileHeader />
 
-      <main className="pb-20 lg:ml-[248px] lg:pb-0">
-        {section === "feed" && (
-          <Feed
-            onPost={setOpenPost}
-            notificationsOpen={notificationsOpen}
-            onNotifications={() => setNotificationsOpen((value) => !value)}
-          />
-        )}
-        {section === "messages" && <Messages />}
-        {section === "profile" && <Profile onPost={setOpenPost} />}
-      </main>
+        <main className="pb-20 lg:ml-[248px] lg:pb-0">
+          {section === "feed" && (
+            <Feed
+              onPost={setOpenPost}
+              notificationsOpen={notificationsOpen}
+              onNotifications={() => setNotificationsOpen((value) => !value)}
+            />
+          )}
+          {section === "messages" && <Messages />}
+          {section === "profile" && <Profile onPost={setOpenPost} />}
+        </main>
 
-      <MobileTabBar
-        section={section}
-        onCreate={() => setComposer("post")}
-        onNotifications={() => setNotificationsOpen((value) => !value)}
-        notificationsOpen={notificationsOpen}
-      />
+        <MobileTabBar
+          section={section}
+          onCreate={() => setComposer("post")}
+          onNotifications={() => setNotificationsOpen((value) => !value)}
+          notificationsOpen={notificationsOpen}
+        />
 
-      <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
-      <Composer mode={composer} onClose={() => setComposer(null)} />
-      <PostDetail post={openPost} onClose={() => setOpenPost(null)} />
-    </div>
+        <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+        <Composer mode={composer} onClose={() => setComposer(null)} />
+        <PostDetail post={openPost} onClose={() => setOpenPost(null)} />
+      </div>
     </VideoPrefsProvider>
   );
 }
