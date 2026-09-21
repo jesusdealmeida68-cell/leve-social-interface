@@ -156,7 +156,13 @@ export async function getProfileByUsername(username: string): Promise<Profile | 
 
 export async function updateProfile(
   userId: string,
-  values: { name?: string; bio?: string; avatar_url?: string; username?: string },
+  values: {
+    name?: string;
+    bio?: string;
+    avatar_url?: string;
+    cover_url?: string;
+    username?: string;
+  },
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(values).eq("id", userId);
   if (error) throw error;

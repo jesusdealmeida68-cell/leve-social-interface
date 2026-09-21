@@ -1,14 +1,17 @@
 import { Grid3x3, SendHorizonal } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { getProfileByUsername, getProfileStats, listPostsByUser } from "@/lib/leve";
+import { EditProfileDialog } from "./edit-profile";
 import { Avatar, formatCount, PostThumb } from "./primitives";
 
 export function Profile({ handle }: { handle?: string | undefined } = {}) {
   const { user, profile: myProfile } = useAuth();
   const isMe = !handle || handle === myProfile?.username;
+  const [editing, setEditing] = useState(false);
 
   const { data: otherProfile, isLoading: loadingOther } = useQuery({
     queryKey: ["profile-by-username", handle],
@@ -62,7 +65,7 @@ export function Profile({ handle }: { handle?: string | undefined } = {}) {
           </span>
           <div className="flex items-center gap-2 pb-1">
             {isMe ? (
-              <Button>Editar perfil</Button>
+              <Button onClick={() => setEditing(true)}>Editar perfil</Button>
             ) : (
               <Button asChild>
                 <Link to="/mensagens" search={{ to: person.username }}>
@@ -117,6 +120,10 @@ export function Profile({ handle }: { handle?: string | undefined } = {}) {
             {person.name.split(" ")[0]} ainda não tem publicações.
           </p>
         </div>
+      )}
+
+      {isMe && (
+        <EditProfileDialog open={editing} onClose={() => setEditing(false)} person={person} />
       )}
     </div>
   );
