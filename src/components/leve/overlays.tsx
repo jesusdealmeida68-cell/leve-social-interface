@@ -1,5 +1,5 @@
-import { Heart, ImagePlus, MessageCircle, Send } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Heart, ImagePlus, MessageCircle, Plus, Send, Video as VideoIcon, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,18 +17,14 @@ import { VideoPlayer } from "./video-player";
 
 export type ComposerMode = "post" | null;
 
-const formats = [
-  { key: "photo", label: "Foto" },
-  { key: "video", label: "Vídeo" },
-  { key: "text", label: "Texto" },
-] as const;
+const MAX_MEDIA = 10;
 
-type Format = (typeof formats)[number]["key"];
+type MediaItem = { id: string; url: string; kind: "image" | "video" };
 
 export function Composer({ mode, onClose }: { mode: ComposerMode; onClose: () => void }) {
   return (
     <Dialog open={mode !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100%-1.5rem)] max-w-md rounded-3xl">
+      <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-lg gap-0 overflow-y-auto rounded-3xl p-0">
         {/* O conteúdo só existe enquanto o diálogo está aberto, por isso o estado reinicia sozinho. */}
         {mode && <ComposerBody onClose={onClose} />}
       </DialogContent>
@@ -37,91 +33,131 @@ export function Composer({ mode, onClose }: { mode: ComposerMode; onClose: () =>
 }
 
 function ComposerBody({ onClose }: { onClose: () => void }) {
-  const [format, setFormat] = useState<Format>("photo");
-  const [picked, setPicked] = useState(false);
-  const needsMedia = format !== "text";
-  const mediaLabel = format === "video" ? "vídeo" : "foto";
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Liberta a memória das pré-visualizações quando o diálogo fecha.
+  useEffect(() => {
+    return () => {
+      for (const item of media) URL.revokeObjectURL(item.url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const addFiles = (files: FileList | null) => {
+    if (!files) return;
+    const next: MediaItem[] = Array.from(files)
+      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
+      .slice(0, Math.max(0, MAX_MEDIA - media.length))
+      .map((file) => ({
+        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+        url: URL.createObjectURL(file),
+        kind: file.type.startsWith("video/") ? "video" : "image",
+      }));
+    setMedia((items) => [...items, ...next]);
+  };
+
+  const removeItem = (id: string) => {
+    setMedia((items) => {
+      const target = items.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return items.filter((item) => item.id !== id);
+    });
+  };
+
+  const publish = (event: FormEvent) => {
+    event.preventDefault();
+    if (media.length === 0) return;
+    onClose();
+  };
 
   return (
-    <>
+    <form onSubmit={publish} className="p-5">
       <DialogHeader className="text-left">
         <DialogTitle className="font-display text-xl">Nova publicação</DialogTitle>
-        <DialogDescription>Escolhe o formato e prepara o conteúdo.</DialogDescription>
+        <DialogDescription>Junta fotos e vídeos numa só publicação.</DialogDescription>
       </DialogHeader>
 
-      <div
-        role="radiogroup"
-        aria-label="Formato"
-        className="inline-flex w-fit gap-1 rounded-full bg-secondary p-1"
-      >
-        {formats.map((item) => {
-          const selected = item.key === format;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => {
-                setFormat(item.key);
-                setPicked(false);
-              }}
-              className={cn(
-                "h-9 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                selected
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          addFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
 
-      {needsMedia && (
-        <div className="grid aspect-[16/10] place-items-center overflow-hidden rounded-2xl border border-dashed border-border bg-card">
-          {picked ? (
-            <div className="relative size-full">
-              <img
-                src={me.image}
-                alt={`Pré-visualização do ${mediaLabel}`}
-                className="size-full object-cover"
-                width={1200}
-                height={1504}
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                className="absolute bottom-3 right-3"
-                onClick={() => setPicked(false)}
+      <div className="mt-4">
+        {media.length === 0 ? (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="grid aspect-[4/3] w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-secondary/60 text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+              <ImagePlus className="size-6" />
+            </span>
+            <span className="text-sm font-semibold">Adicionar fotos e vídeos</span>
+            <span className="text-xs">Podes escolher quantas quiseres, juntas</span>
+          </button>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {media.map((item) => (
+              <div
+                key={item.id}
+                className="group relative aspect-square overflow-hidden rounded-xl bg-secondary"
               >
-                Trocar
-              </Button>
-            </div>
-          ) : (
-            <Button variant="secondary" onClick={() => setPicked(true)}>
-              <ImagePlus />
-              Escolher {mediaLabel}
-            </Button>
-          )}
-        </div>
-      )}
+                {item.kind === "video" ? (
+                  <video src={item.url} muted playsInline className="size-full object-cover" />
+                ) : (
+                  <img src={item.url} alt="" className="size-full object-cover" />
+                )}
+                {item.kind === "video" && (
+                  <span className="absolute bottom-1.5 left-1.5 grid size-5 place-items-center rounded-full bg-black/60 text-white">
+                    <VideoIcon className="size-3" />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  aria-label="Remover"
+                  className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-black/60 text-white transition-transform hover:bg-black/75 active:scale-90"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {media.length < MAX_MEDIA && (
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                aria-label="Adicionar mais"
+                className="grid aspect-square place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Plus className="size-6" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <textarea
         aria-label="Legenda"
-        placeholder="Partilha uma ideia..."
-        className={cn(
-          "resize-none rounded-2xl bg-secondary p-4 text-[15px] leading-6 outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-ring",
-          needsMedia ? "min-h-20" : "min-h-32",
-        )}
+        placeholder="Escreve uma legenda (opcional)..."
+        className="mt-4 min-h-20 w-full resize-none rounded-2xl bg-secondary p-4 text-[15px] leading-6 outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
       />
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Visível para todos</p>
-        <Button onClick={onClose}>Publicar</Button>
+        <Button type="submit" disabled={media.length === 0}>
+          Publicar
+        </Button>
       </div>
-    </>
+    </form>
   );
 }
 
