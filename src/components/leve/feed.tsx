@@ -1,4 +1,4 @@
-import { Bell, Search } from "lucide-react";
+import { Bell, CircleDollarSign, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,15 @@ export function Feed({
                 className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </label>
+            {/* Só o botão: por agora não faz nada. */}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 shrink-0 gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] sm:px-4"
+            >
+              <CircleDollarSign className="hidden size-4 sm:block" />
+              Conteúdos pagos
+            </Button>
             <IconButton
               label="Notificações"
               active={notificationsOpen}
