@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { CommentsSection } from "./overlays";
-import { Avatar, Logo } from "./primitives";
+import { Avatar, Logo, PersonLink } from "./primitives";
 import { getPostById, posts, type Post } from "./data";
 import { VideoPlayer } from "./video-player";
 
@@ -72,11 +72,13 @@ function MediaBlock({ post }: { post: Post }) {
         />
       )}
       <div className="flex items-center gap-3 px-4 pt-3">
-        <Avatar person={post.author} size="sm" />
-        <div className="min-w-0 flex-1 leading-tight">
+        <PersonLink person={post.author}>
+          <Avatar person={post.author} size="sm" />
+        </PersonLink>
+        <PersonLink person={post.author} className="min-w-0 flex-1 leading-tight hover:underline">
           <p className="truncate text-sm font-bold">{post.author.name}</p>
           <p className="truncate text-[13px] text-muted-foreground">{post.caption}</p>
-        </div>
+        </PersonLink>
       </div>
     </article>
   );

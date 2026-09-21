@@ -15,6 +15,7 @@ import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as MensagensRouteImport } from './routes/mensagens'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as VideoPostIdRouteImport } from './routes/video.$postId'
+import { Route as PerfilHandleRouteImport } from './routes/perfil.$handle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const VideoPostIdRoute = VideoPostIdRouteImport.update({
   path: '/video/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PerfilHandleRoute = PerfilHandleRouteImport.update({
+  id: '/perfil/$handle',
+  path: '/perfil/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/video/$postId': typeof VideoPostIdRoute
+  '/perfil/$handle': typeof PerfilHandleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/video/$postId': typeof VideoPostIdRoute
+  '/perfil/$handle': typeof PerfilHandleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/mensagens': typeof MensagensRoute
   '/perfil': typeof PerfilRoute
   '/video/$postId': typeof VideoPostIdRoute
+  '/perfil/$handle': typeof PerfilHandleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/perfil'
     | '/video/$postId'
+    | '/perfil/$handle'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/perfil'
     | '/video/$postId'
+    | '/perfil/$handle'
   id:
     | '__root__'
     | '/'
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/mensagens'
     | '/perfil'
     | '/video/$postId'
+    | '/perfil/$handle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +118,7 @@ export interface RootRouteChildren {
   MensagensRoute: typeof MensagensRoute
   PerfilRoute: typeof PerfilRoute
   VideoPostIdRoute: typeof VideoPostIdRoute
+  PerfilHandleRoute: typeof PerfilHandleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideoPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/perfil/$handle': {
+      id: '/perfil/$handle'
+      path: '/perfil/$handle'
+      fullPath: '/perfil/$handle'
+      preLoaderRoute: typeof PerfilHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   MensagensRoute: MensagensRoute,
   PerfilRoute: PerfilRoute,
   VideoPostIdRoute: VideoPostIdRoute,
+  PerfilHandleRoute: PerfilHandleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

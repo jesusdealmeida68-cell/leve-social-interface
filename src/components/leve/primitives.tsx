@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, Images, MessageCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Person, Post } from "./data";
+import { profilePath, type Person, type Post } from "./data";
 import leveIcon from "@/assets/leve-icon.png";
 
 export function formatCount(value: number) {
@@ -94,6 +94,27 @@ export function Avatar({
       width={96}
       height={96}
     />
+  );
+}
+
+/** Envolve o avatar/nome de uma pessoa num link para o perfil dela. */
+export function PersonLink({
+  person,
+  className,
+  children,
+}: {
+  person: Person;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      to={profilePath(person)}
+      aria-label={`Ver perfil de ${person.name}`}
+      className={cn("min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
+    >
+      {children}
+    </Link>
   );
 }
 

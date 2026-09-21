@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { me, notifications, type Section } from "./data";
-import { Avatar, IconButton, Logo } from "./primitives";
+import { Avatar, IconButton, Logo, PersonLink } from "./primitives";
 
 export const nav = [
   { key: "feed", label: "Feed", path: "/", icon: Home },
@@ -244,10 +244,15 @@ export function NotificationPanel({ open, onClose }: { open: boolean; onClose: (
               key={item.person.handle}
               className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-accent/60"
             >
-              <Avatar person={item.person} size="sm" />
-              <p className="min-w-0 flex-1 text-sm leading-5">
-                <strong className="font-bold">{item.person.name.split(" ")[0]}</strong> {item.text}
-              </p>
+              <PersonLink person={item.person}>
+                <Avatar person={item.person} size="sm" />
+              </PersonLink>
+              <PersonLink person={item.person} className="min-w-0 flex-1 hover:underline">
+                <p className="text-sm leading-5">
+                  <strong className="font-bold">{item.person.name.split(" ")[0]}</strong>{" "}
+                  {item.text}
+                </p>
+              </PersonLink>
               <span className="shrink-0 text-xs text-muted-foreground">{item.time}</span>
             </li>
           ))}

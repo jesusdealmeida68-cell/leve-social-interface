@@ -6,7 +6,14 @@ import videoAtlantico from "@/assets/leve-video-atlantico.mp4";
 
 export type Section = "feed" | "messages" | "profile";
 
-export type Person = { name: string; handle: string; image?: string };
+export type Person = {
+  name: string;
+  handle: string;
+  image?: string;
+  bio?: string;
+  followers?: number;
+  following?: number;
+};
 
 export type Post = {
   id: number;
@@ -35,13 +42,52 @@ export type Conversation = {
 
 /* ------------------------------ Pessoas ------------------------------ */
 
-export const amara: Person = { name: "Amara Costa", handle: "@amaracosta", image: editorialOne };
-export const joel: Person = { name: "Joel Mota", handle: "@joelmota", image: editorialTwo };
-export const lina: Person = { name: "Lina Sousa", handle: "@linasousa", image: editorialThree };
-export const equipa: Person = { name: "Equipa LEVE", handle: "@equipaleve" };
+export const amara: Person = {
+  name: "Amara Costa",
+  handle: "@amaracosta",
+  image: editorialOne,
+  bio: "Direção criativa, imagem e ideias em movimento. Luanda, Angola.",
+  followers: 18400,
+  following: 482,
+};
+export const joel: Person = {
+  name: "Joel Mota",
+  handle: "@joelmota",
+  image: editorialTwo,
+  bio: "Artista visual. Processos, esboços e o estúdio por dentro.",
+  followers: 9200,
+  following: 316,
+};
+export const lina: Person = {
+  name: "Lina Sousa",
+  handle: "@linasousa",
+  image: editorialThree,
+  bio: "Fotografia de rua e o Atlântico ao fim do dia. Luanda, Angola.",
+  followers: 24700,
+  following: 198,
+};
+export const equipa: Person = {
+  name: "Equipa LEVE",
+  handle: "@equipaleve",
+  bio: "Novidades, dicas e avisos oficiais do LEVE.",
+  followers: 51200,
+  following: 4,
+};
 
 /** A pessoa que está a usar o protótipo. */
 export const me = amara;
+
+/** Todas as pessoas conhecidas do protótipo, para encontrar uma pelo @. */
+export const people: Person[] = [amara, joel, lina, equipa];
+
+export function personByHandle(handle: string): Person | undefined {
+  return people.find((person) => person.handle === handle);
+}
+
+/** Caminho do perfil de uma pessoa: a própria vai para /perfil, as outras para /perfil/@handle. */
+export function profilePath(person: Person): string {
+  return person.handle === me.handle ? "/perfil" : `/perfil/${person.handle.slice(1)}`;
+}
 
 export const suggestions: Person[] = [joel, lina];
 
@@ -97,6 +143,11 @@ export const allPosts: Post[] = [...posts, ...profilePosts];
 
 export function getPostById(id: number): Post | undefined {
   return allPosts.find((post) => post.id === id);
+}
+
+/** Publicações de uma pessoa (pelo @), para a página de perfil de quem não é "eu". */
+export function postsByAuthor(handle: string): Post[] {
+  return posts.filter((post) => post.author.handle === handle);
 }
 
 /** Vídeos disponíveis, na ordem em que aparecem no feed e no perfil. */

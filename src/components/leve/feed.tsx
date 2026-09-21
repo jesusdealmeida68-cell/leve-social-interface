@@ -2,7 +2,7 @@ import { Bell, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { posts, suggestions, trending } from "./data";
-import { Avatar, IconButton, PostThumb } from "./primitives";
+import { Avatar, IconButton, PersonLink, PostThumb } from "./primitives";
 
 export function Feed({
   notificationsOpen,
@@ -83,11 +83,13 @@ function RightRail() {
               const isFollowed = followed.includes(person.handle);
               return (
                 <li key={person.handle} className="flex items-center gap-3">
-                  <Avatar person={person} size="sm" />
-                  <div className="min-w-0 flex-1 leading-tight">
+                  <PersonLink person={person}>
+                    <Avatar person={person} size="sm" />
+                  </PersonLink>
+                  <PersonLink person={person} className="min-w-0 flex-1 leading-tight hover:underline">
                     <p className="truncate text-sm font-bold">{person.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{person.handle}</p>
-                  </div>
+                  </PersonLink>
                   <Button
                     variant={isFollowed ? "secondary" : "outline"}
                     size="sm"

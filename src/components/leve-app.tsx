@@ -9,7 +9,17 @@ import { VideoPrefsProvider } from "./leve/video-player";
 import type { Section } from "./leve/data";
 
 /** Estrutura comum do LEVE: navegação, área de conteúdo e as camadas (criar, notificações). */
-export function LeveApp({ section }: { section: Section }) {
+export function LeveApp({
+  section,
+  profileHandle,
+  messageTo,
+}: {
+  section: Section;
+  /** Perfil a mostrar quando a secção é "profile"; sem isto mostra o próprio perfil. */
+  profileHandle?: string;
+  /** Abre logo esta conversa quando a secção é "messages" (vindo do botão Mensagem do perfil). */
+  messageTo?: string;
+}) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [composer, setComposer] = useState<ComposerMode>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -32,8 +42,8 @@ export function LeveApp({ section }: { section: Section }) {
               onNotifications={() => setNotificationsOpen((value) => !value)}
             />
           )}
-          {section === "messages" && <Messages />}
-          {section === "profile" && <Profile />}
+          {section === "messages" && <Messages initialHandle={messageTo} />}
+          {section === "profile" && <Profile handle={profileHandle} />}
         </main>
 
         <MobileTabBar

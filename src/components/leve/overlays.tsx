@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { me, postComments, type Post } from "./data";
-import { ActionButton, Avatar, formatCount } from "./primitives";
+import { ActionButton, Avatar, PersonLink, formatCount } from "./primitives";
 
 /* ------------------------------ Criar ------------------------------ */
 
@@ -196,9 +196,13 @@ export function CommentsSection({ post }: { post: Post }) {
       <ul className="mt-4 space-y-4 border-t border-border pt-4">
         {postComments.map((item) => (
           <li key={item.person.handle} className="flex items-start gap-3">
-            <Avatar person={item.person} size="sm" />
+            <PersonLink person={item.person}>
+              <Avatar person={item.person} size="sm" />
+            </PersonLink>
             <p className="min-w-0 text-sm leading-5">
-              <strong className="mr-1.5 font-bold">{item.person.handle}</strong>
+              <PersonLink person={item.person} className="inline hover:underline">
+                <strong className="mr-1.5 font-bold">{item.person.handle}</strong>
+              </PersonLink>
               {item.text}
             </p>
           </li>

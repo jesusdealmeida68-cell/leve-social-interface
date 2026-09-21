@@ -2,7 +2,7 @@ import { ArrowLeft, MoreHorizontal, Paperclip, Search, Send } from "lucide-react
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { conversations, defaultConversation, type ChatMessage, type Conversation } from "./data";
-import { Avatar, IconButton } from "./primitives";
+import { Avatar, IconButton, PersonLink } from "./primitives";
 
 type Threads = Record<string, ChatMessage[]>;
 
@@ -10,9 +10,9 @@ const initialThreads: Threads = Object.fromEntries(
   conversations.map((item) => [item.person.handle, item.thread]),
 );
 
-export function Messages() {
+export function Messages({ initialHandle }: { initialHandle?: string } = {}) {
   /** Conversa aberta em ecrã inteiro no telemóvel. No desktop mostra-se sempre uma. */
-  const [openHandle, setOpenHandle] = useState<string | null>(null);
+  const [openHandle, setOpenHandle] = useState<string | null>(initialHandle ?? null);
   const [query, setQuery] = useState("");
   const [threads, setThreads] = useState<Threads>(initialThreads);
   const [readHandles, setReadHandles] = useState<string[]>([]);
@@ -105,46 +105,52 @@ function ConversationRow({
 }) {
   return (
     <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-current={selected ? "true" : undefined}
+      <div
         className={cn(
-          "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex items-center gap-1 rounded-2xl pr-3 transition-colors hover:bg-accent/50",
           selected && "lg:bg-secondary",
         )}
       >
-        <Avatar person={item.person} size="md" />
-        <span className="min-w-0 flex-1 leading-tight">
-          <span className="flex items-baseline gap-2">
-            <span className={cn("truncate text-[15px]", unread ? "font-bold" : "font-semibold")}>
-              {item.person.name}
+        <PersonLink person={item.person} className="shrink-0 p-3 pr-0">
+          <Avatar person={item.person} size="md" />
+        </PersonLink>
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-current={selected ? "true" : undefined}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="min-w-0 flex-1 leading-tight">
+            <span className="flex items-baseline gap-2">
+              <span className={cn("truncate text-[15px]", unread ? "font-bold" : "font-semibold")}>
+                {item.person.name}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">{item.person.handle}</span>
             </span>
-            <span className="truncate text-xs text-muted-foreground">{item.person.handle}</span>
-          </span>
-          <span
-            className={cn(
-              "mt-1 block truncate text-sm",
-              unread ? "text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {lastMessage}
-          </span>
-        </span>
-        <span className="flex shrink-0 flex-col items-end gap-1.5 self-start pt-0.5">
-          <span className="text-xs text-muted-foreground">{item.time}</span>
-          {unread > 0 ? (
             <span
-              className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
-              aria-label={`${unread} mensagens por ler`}
+              className={cn(
+                "mt-1 block truncate text-sm",
+                unread ? "text-foreground" : "text-muted-foreground",
+              )}
             >
-              {unread}
+              {lastMessage}
             </span>
-          ) : (
-            <span className="h-5" aria-hidden="true" />
-          )}
-        </span>
-      </button>
+          </span>
+          <span className="flex shrink-0 flex-col items-end gap-1.5 self-start pt-0.5">
+            <span className="text-xs text-muted-foreground">{item.time}</span>
+            {unread > 0 ? (
+              <span
+                className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground"
+                aria-label={`${unread} mensagens por ler`}
+              >
+                {unread}
+              </span>
+            ) : (
+              <span className="h-5" aria-hidden="true" />
+            )}
+          </span>
+        </button>
+      </div>
     </li>
   );
 }
@@ -191,11 +197,13 @@ function ChatPane({
         <IconButton label="Voltar às conversas" onClick={onBack} className="lg:hidden">
           <ArrowLeft />
         </IconButton>
-        <Avatar person={person} size="sm" />
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-[15px] font-bold">{person.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{person.handle}</p>
-        </div>
+        <PersonLink person={person} className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-80">
+          <Avatar person={person} size="sm" />
+          <span className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-[15px] font-bold">{person.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{person.handle}</p>
+          </span>
+        </PersonLink>
         <IconButton label="Opções da conversa">
           <MoreHorizontal />
         </IconButton>
