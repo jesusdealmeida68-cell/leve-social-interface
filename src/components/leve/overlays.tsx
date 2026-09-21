@@ -334,7 +334,7 @@ export function CommentsSection({ post }: { post: Post }) {
 
   return (
     <>
-      <div className="mt-4 flex items-center gap-1 pl-1">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <ActionButton
           label="Curtir"
           pressed={post.likedByMe}

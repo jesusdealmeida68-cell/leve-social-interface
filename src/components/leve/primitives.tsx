@@ -181,11 +181,14 @@ export function ActionButton({
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-muted-foreground transition-[color,background-color,transform] hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-90",
+        "group/action inline-flex h-11 items-center gap-2 rounded-full bg-secondary px-4 text-sm font-bold text-foreground/75 ring-1 ring-inset ring-border transition-[color,background-color,box-shadow,transform] duration-200",
+        "hover:bg-accent hover:text-foreground hover:ring-foreground/15",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "active:scale-95 [&_svg]:transition-transform [&_svg]:duration-200 hover:[&_svg]:scale-110",
         active &&
           (tone === "like"
-            ? "bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
-            : "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"),
+            ? "bg-destructive/10 text-destructive ring-destructive/30 hover:bg-destructive/15 hover:text-destructive hover:ring-destructive/40 [&_svg]:scale-110"
+            : "bg-primary/10 text-primary ring-primary/30 hover:bg-primary/15 hover:text-primary hover:ring-primary/40 [&_svg]:scale-110"),
       )}
     >
       {children}
