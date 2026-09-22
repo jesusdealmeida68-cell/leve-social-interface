@@ -363,6 +363,56 @@ export async function registerPostView(postId: string, viewerKey: string): Promi
   return data;
 }
 
+/** Uma conta tal como o administrador a vê, com telefone e código de verificação. */
+export type AdminAccount = {
+  id: string;
+  username: string;
+  name: string;
+  phone: string | null;
+  avatar_url: string | null;
+  phone_verified: boolean;
+  verified: boolean;
+  is_admin: boolean;
+  verification_code: string | null;
+  created_at: string;
+};
+
+/** Diz se a pessoa autenticada é administradora. Sem sessão, devolve false. */
+export async function amIAdmin(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("am_i_admin");
+  if (error) throw error;
+  return data ?? false;
+}
+
+/** Lista todas as contas com os dados de administração. Vazio se não fores admin. */
+export async function adminListAccounts(): Promise<AdminAccount[]> {
+  const { data, error } = await supabase.rpc("admin_list_accounts");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function adminSetPhoneVerified(targetId: string, next: boolean): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_phone_verified", { target_id: targetId, next });
+  if (error) throw error;
+}
+
+export async function adminSetVerified(targetId: string, next: boolean): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_verified", { target_id: targetId, next });
+  if (error) throw error;
+}
+
+export async function adminSetAdmin(targetId: string, next: boolean): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_admin", { target_id: targetId, next });
+  if (error) throw error;
+}
+
+/** Gera um novo código de verificação para a conta (fica por verificar até o usar). */
+export async function adminRegenerateCode(targetId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("admin_regenerate_code", { target_id: targetId });
+  if (error) throw error;
+  return data;
+}
+
 /**
  * Lê os ficheiros de uma publicação. As publicações antigas (e as de um só ficheiro) guardam
  * apenas o endereço em `media_url`; as que têm vários ficheiros guardam ali uma lista em JSON.

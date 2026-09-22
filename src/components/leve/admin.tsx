@@ -1,81 +1,31 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   BadgeCheck,
   Check,
   Copy,
   LayoutDashboard,
+  Loader2,
   RefreshCcw,
   Search,
   ShieldCheck,
   Smartphone,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import {
+  adminListAccounts,
+  adminRegenerateCode,
+  adminSetPhoneVerified,
+  adminSetVerified,
+  amIAdmin,
+  type AdminAccount,
+} from "@/lib/leve";
 import { Logo } from "./primitives";
-
-/**
- * Página de administração — SÓ VISUAL por agora. Os dados abaixo são de exemplo;
- * quando a migração for aplicada (ver 0002_account_verification_and_admin.sql),
- * troca MOCK_ACCOUNTS por chamadas reais (adminListAccounts, adminSetVerified, etc.).
- */
-type MockAccount = {
-  id: string;
-  name: string;
-  username: string;
-  phone: string;
-  avatarLetter: string;
-  createdAt: string;
-  phoneVerified: boolean;
-  badge: boolean;
-  code: string;
-};
-
-const MOCK_ACCOUNTS: MockAccount[] = [
-  {
-    id: "1",
-    name: "Luna Ferreira",
-    username: "lunaoficial",
-    phone: "+244 923 456 789",
-    avatarLetter: "L",
-    createdAt: "Há 2 horas",
-    phoneVerified: false,
-    badge: false,
-    code: "482913",
-  },
-  {
-    id: "2",
-    name: "Rafa Domingos",
-    username: "rafadomingos",
-    phone: "+244 912 345 678",
-    avatarLetter: "R",
-    createdAt: "Há 6 horas",
-    phoneVerified: true,
-    badge: false,
-    code: "051287",
-  },
-  {
-    id: "3",
-    name: "Bela Neto",
-    username: "belaneto",
-    phone: "+244 934 112 233",
-    avatarLetter: "B",
-    createdAt: "Ontem",
-    phoneVerified: true,
-    badge: true,
-    code: "739021",
-  },
-  {
-    id: "4",
-    name: "Maya Fortunato",
-    username: "mayaf",
-    phone: "+244 945 667 890",
-    avatarLetter: "M",
-    createdAt: "Há 2 dias",
-    phoneVerified: false,
-    badge: false,
-    code: "204558",
-  },
-];
 
 const areas = [
   { key: "geral", label: "Visão geral", icon: LayoutDashboard },
@@ -87,25 +37,54 @@ const areas = [
 type AreaKey = (typeof areas)[number]["key"];
 
 export function Admin() {
+  const { user, loading: authLoading } = useAuth();
   const [area, setArea] = useState<AreaKey>("geral");
-  const [accounts, setAccounts] = useState(MOCK_ACCOUNTS);
+  const queryClient = useQueryClient();
 
-  const setPhoneVerified = (id: string, next: boolean) =>
-    setAccounts((list) => list.map((a) => (a.id === id ? { ...a, phoneVerified: next } : a)));
-  const setBadge = (id: string, next: boolean) =>
-    setAccounts((list) => list.map((a) => (a.id === id ? { ...a, badge: next } : a)));
-  const regenerateCode = (id: string) =>
-    setAccounts((list) =>
-      list.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              code: String(Math.floor(100000 + Math.random() * 900000)),
-              phoneVerified: false,
-            }
-          : a,
-      ),
+  const adminCheck = useQuery({
+    queryKey: ["am-i-admin", user?.id ?? null],
+    queryFn: amIAdmin,
+    enabled: Boolean(user),
+  });
+
+  const accountsQuery = useQuery({
+    queryKey: ["admin-accounts"],
+    queryFn: adminListAccounts,
+    enabled: adminCheck.data === true,
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-accounts"] });
+
+  if (authLoading || (user && adminCheck.isLoading)) {
+    return <CenteredState icon={Loader2} spin title="A verificar acesso..." />;
+  }
+
+  if (!user || adminCheck.data === false) {
+    return (
+      <CenteredState
+        icon={ShieldCheck}
+        title="Acesso restrito"
+        text="Esta área é só para administradores do LEVE."
+        action={
+          <Button asChild>
+            <Link to="/">Voltar ao início</Link>
+          </Button>
+        }
+      />
     );
+  }
+
+  if (adminCheck.isError) {
+    return (
+      <CenteredState
+        icon={AlertTriangle}
+        title="Não foi possível verificar o acesso"
+        text="Tenta atualizar a página."
+      />
+    );
+  }
+
+  const accounts = accountsQuery.data ?? [];
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl">
@@ -163,16 +142,30 @@ export function Admin() {
           })}
         </nav>
 
-        {area === "geral" && <Overview accounts={accounts} />}
-        {area === "contas" && <AccountsArea accounts={accounts} />}
-        {area === "numero" && (
-          <PhoneVerificationArea
-            accounts={accounts}
-            onVerify={setPhoneVerified}
-            onRegenerate={regenerateCode}
+        {accountsQuery.isLoading ? (
+          <CenteredState icon={Loader2} spin title="A carregar contas..." inline />
+        ) : accountsQuery.isError ? (
+          <CenteredState
+            icon={AlertTriangle}
+            title="Não foi possível carregar as contas"
+            text="Tenta atualizar a página."
+            inline
+            action={
+              <Button variant="outline" onClick={() => accountsQuery.refetch()}>
+                Tentar outra vez
+              </Button>
+            }
           />
+        ) : (
+          <>
+            {area === "geral" && <Overview accounts={accounts} />}
+            {area === "contas" && <AccountsArea accounts={accounts} />}
+            {area === "numero" && (
+              <PhoneVerificationArea accounts={accounts} onChanged={invalidate} />
+            )}
+            {area === "conta" && <BadgeArea accounts={accounts} onChanged={invalidate} />}
+          </>
         )}
-        {area === "conta" && <BadgeArea accounts={accounts} onToggle={setBadge} />}
       </main>
     </div>
   );
@@ -180,15 +173,15 @@ export function Admin() {
 
 /* ------------------------------ Visão geral ------------------------------ */
 
-function Overview({ accounts }: { accounts: MockAccount[] }) {
+function Overview({ accounts }: { accounts: AdminAccount[] }) {
   const stats = [
     { label: "Contas", value: accounts.length, icon: Users },
     {
       label: "Números por verificar",
-      value: accounts.filter((a) => !a.phoneVerified).length,
+      value: accounts.filter((a) => !a.phone_verified).length,
       icon: Smartphone,
     },
-    { label: "Contas com selo", value: accounts.filter((a) => a.badge).length, icon: BadgeCheck },
+    { label: "Contas com selo", value: accounts.filter((a) => a.verified).length, icon: BadgeCheck },
   ];
 
   return (
@@ -211,18 +204,25 @@ function Overview({ accounts }: { accounts: MockAccount[] }) {
 
       <div className="mt-6 rounded-3xl border border-border bg-card p-5">
         <h2 className="font-display text-base font-semibold">Contas recentes</h2>
-        <ul className="mt-3 divide-y divide-border">
-          {accounts.slice(0, 4).map((account) => (
-            <li key={account.id} className="flex items-center gap-3 py-2.5">
-              <AccountAvatar letter={account.avatarLetter} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{account.name}</p>
-                <p className="truncate text-xs text-muted-foreground">@{account.username}</p>
-              </div>
-              <span className="text-xs text-muted-foreground">{account.createdAt}</span>
-            </li>
-          ))}
-        </ul>
+        {accounts.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Ainda não há contas registadas.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-border">
+            {accounts.slice(0, 4).map((account) => (
+              <li key={account.id} className="flex items-center gap-3 py-2.5">
+                <AccountAvatar
+                  letter={initialOf(account.name || account.username)}
+                  src={account.avatar_url}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{account.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">@{account.username}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">{timeAgo(account.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -230,11 +230,11 @@ function Overview({ accounts }: { accounts: MockAccount[] }) {
 
 /* ------------------------------ Contas ------------------------------ */
 
-function AccountsArea({ accounts }: { accounts: MockAccount[] }) {
+function AccountsArea({ accounts }: { accounts: AdminAccount[] }) {
   const [query, setQuery] = useState("");
   const term = query.trim().toLowerCase();
   const filtered = accounts.filter((a) =>
-    `${a.name} @${a.username} ${a.phone}`.toLowerCase().includes(term),
+    `${a.name} @${a.username} ${a.phone ?? ""}`.toLowerCase().includes(term),
   );
 
   return (
@@ -261,24 +261,28 @@ function AccountsArea({ accounts }: { accounts: MockAccount[] }) {
             className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"
           >
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <AccountAvatar letter={account.avatarLetter} />
+              <AccountAvatar
+                letter={initialOf(account.name || account.username)}
+                src={account.avatar_url}
+              />
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 truncate text-sm font-bold">
                   {account.name}
-                  {account.badge && <BadgeCheck className="size-4 shrink-0 text-primary" />}
+                  {account.verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  @{account.username} · {account.phone}
+                  @{account.username} · {account.phone ?? "sem telefone"}
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <StatusPill
-                ok={account.phoneVerified}
+                ok={account.phone_verified}
                 okLabel="Número verificado"
                 noLabel="Número por verificar"
               />
-              <StatusPill ok={account.badge} okLabel="Com selo" noLabel="Sem selo" />
+              <StatusPill ok={account.verified} okLabel="Com selo" noLabel="Sem selo" />
+              {account.is_admin && <StatusPill ok okLabel="Administrador" noLabel="" />}
             </div>
           </div>
         ))}
@@ -296,15 +300,13 @@ function AccountsArea({ accounts }: { accounts: MockAccount[] }) {
 
 function PhoneVerificationArea({
   accounts,
-  onVerify,
-  onRegenerate,
+  onChanged,
 }: {
-  accounts: MockAccount[];
-  onVerify: (id: string, next: boolean) => void;
-  onRegenerate: (id: string) => void;
+  accounts: AdminAccount[];
+  onChanged: () => void;
 }) {
-  const pending = accounts.filter((a) => !a.phoneVerified);
-  const done = accounts.filter((a) => a.phoneVerified);
+  const pending = accounts.filter((a) => !a.phone_verified);
+  const done = accounts.filter((a) => a.phone_verified);
 
   return (
     <div>
@@ -313,17 +315,10 @@ function PhoneVerificationArea({
         subtitle="O código não expira — só deixa de valer depois de ser usado uma vez. Entrega-o à pessoa (ex.: por Instagram) usando o número mostrado aqui."
       />
 
-      <h2 className="mt-6 text-sm font-bold text-muted-foreground">
-        Por entregar · {pending.length}
-      </h2>
+      <h2 className="mt-6 text-sm font-bold text-muted-foreground">Por entregar · {pending.length}</h2>
       <div className="mt-2 space-y-2">
         {pending.map((account) => (
-          <CodeRow
-            key={account.id}
-            account={account}
-            onVerify={onVerify}
-            onRegenerate={onRegenerate}
-          />
+          <CodeRow key={account.id} account={account} onChanged={onChanged} />
         ))}
         {pending.length === 0 && (
           <p className="rounded-2xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
@@ -339,12 +334,7 @@ function PhoneVerificationArea({
           </h2>
           <div className="mt-2 space-y-2">
             {done.map((account) => (
-              <CodeRow
-                key={account.id}
-                account={account}
-                onVerify={onVerify}
-                onRegenerate={onRegenerate}
-              />
+              <CodeRow key={account.id} account={account} onChanged={onChanged} />
             ))}
           </div>
         </>
@@ -353,20 +343,15 @@ function PhoneVerificationArea({
   );
 }
 
-function CodeRow({
-  account,
-  onVerify,
-  onRegenerate,
-}: {
-  account: MockAccount;
-  onVerify: (id: string, next: boolean) => void;
-  onRegenerate: (id: string) => void;
-}) {
+function CodeRow({ account, onChanged }: { account: AdminAccount; onChanged: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const copy = async () => {
+    if (!account.verification_code) return;
     try {
-      await navigator.clipboard.writeText(account.code);
+      await navigator.clipboard.writeText(account.verification_code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -374,44 +359,61 @@ function CodeRow({
     }
   };
 
+  const run = async (action: () => Promise<unknown>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Algo correu mal.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <AccountAvatar letter={account.avatarLetter} />
+        <AccountAvatar letter={initialOf(account.name || account.username)} src={account.avatar_url} />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{account.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{account.phone}</p>
+          <p className="truncate text-xs text-muted-foreground">{account.phone ?? "sem telefone"}</p>
+          {error && <p className="mt-0.5 text-xs font-medium text-destructive">{error}</p>}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
         <button
           type="button"
           onClick={copy}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-semibold tabular-nums transition-colors hover:bg-accent"
+          disabled={!account.verification_code}
+          className="flex h-9 items-center gap-1.5 rounded-full bg-secondary px-3 text-sm font-semibold tabular-nums transition-colors hover:bg-accent disabled:opacity-50"
         >
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-          {account.code}
+          {account.verification_code ?? "——————"}
         </button>
         <button
           type="button"
-          onClick={() => onRegenerate(account.id)}
+          onClick={() => run(() => adminRegenerateCode(account.id))}
+          disabled={busy}
           aria-label="Gerar novo código"
           title="Gerar novo código"
-          className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
         >
-          <RefreshCcw className="size-4" />
+          <RefreshCcw className={cn("size-4", busy && "animate-spin")} />
         </button>
         <button
           type="button"
-          onClick={() => onVerify(account.id, !account.phoneVerified)}
+          onClick={() => run(() => adminSetPhoneVerified(account.id, !account.phone_verified))}
+          disabled={busy}
           className={cn(
-            "h-9 rounded-full px-4 text-sm font-semibold transition-colors",
-            account.phoneVerified
+            "h-9 rounded-full px-4 text-sm font-semibold transition-colors disabled:opacity-50",
+            account.phone_verified
               ? "bg-secondary text-foreground hover:bg-accent"
               : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
-          {account.phoneVerified ? "Marcar por verificar" : "Marcar como verificado"}
+          {account.phone_verified ? "Marcar por verificar" : "Marcar como verificado"}
         </button>
       </div>
     </div>
@@ -420,13 +422,7 @@ function CodeRow({
 
 /* ------------------------------ Verificação de conta (selo) ------------------------------ */
 
-function BadgeArea({
-  accounts,
-  onToggle,
-}: {
-  accounts: MockAccount[];
-  onToggle: (id: string, next: boolean) => void;
-}) {
+function BadgeArea({ accounts, onChanged }: { accounts: AdminAccount[]; onChanged: () => void }) {
   return (
     <div>
       <Header
@@ -436,35 +432,61 @@ function BadgeArea({
 
       <div className="mt-5 space-y-2">
         {accounts.map((account) => (
-          <div
-            key={account.id}
-            className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <AccountAvatar letter={account.avatarLetter} />
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 truncate text-sm font-bold">
-                  {account.name}
-                  {account.badge && <BadgeCheck className="size-4 shrink-0 text-primary" />}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">@{account.username}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onToggle(account.id, !account.badge)}
-              className={cn(
-                "h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors",
-                account.badge
-                  ? "bg-secondary text-foreground hover:bg-accent"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-            >
-              {account.badge ? "Remover selo" : "Dar selo"}
-            </button>
-          </div>
+          <BadgeRow key={account.id} account={account} onChanged={onChanged} />
         ))}
+        {accounts.length === 0 && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Ainda não há contas registadas.
+          </p>
+        )}
       </div>
+    </div>
+  );
+}
+
+function BadgeRow({ account, onChanged }: { account: AdminAccount; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await adminSetVerified(account.id, !account.verified);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Algo correu mal.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <AccountAvatar letter={initialOf(account.name || account.username)} src={account.avatar_url} />
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 truncate text-sm font-bold">
+            {account.name}
+            {account.verified && <BadgeCheck className="size-4 shrink-0 text-primary" />}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">@{account.username}</p>
+          {error && <p className="mt-0.5 text-xs font-medium text-destructive">{error}</p>}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={busy}
+        className={cn(
+          "h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors disabled:opacity-50",
+          account.verified
+            ? "bg-secondary text-foreground hover:bg-accent"
+            : "bg-primary text-primary-foreground hover:bg-primary/90",
+        )}
+      >
+        {account.verified ? "Remover selo" : "Dar selo"}
+      </button>
     </div>
   );
 }
@@ -480,7 +502,18 @@ function Header({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function AccountAvatar({ letter }: { letter: string }) {
+function AccountAvatar({ letter, src }: { letter: string; src?: string | null }) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        width={44}
+        height={44}
+        className="size-11 shrink-0 rounded-full object-cover"
+      />
+    );
+  }
   return (
     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-sm font-bold">
       {letter}
@@ -499,4 +532,52 @@ function StatusPill({ ok, okLabel, noLabel }: { ok: boolean; okLabel: string; no
       {ok ? okLabel : noLabel}
     </span>
   );
+}
+
+function CenteredState({
+  icon: Icon,
+  title,
+  text,
+  action,
+  spin = false,
+  inline = false,
+}: {
+  icon: typeof ShieldCheck;
+  title: string;
+  text?: string;
+  action?: ReactNode;
+  spin?: boolean;
+  inline?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid place-items-center px-6 text-center",
+        inline ? "min-h-[40vh]" : "min-h-dvh",
+      )}
+    >
+      <div>
+        <Icon className={cn("mx-auto size-8 text-muted-foreground", spin && "animate-spin")} />
+        <h1 className="mt-4 font-display text-xl font-semibold">{title}</h1>
+        {text && <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{text}</p>}
+        {action && <div className="mt-5">{action}</div>}
+      </div>
+    </div>
+  );
+}
+
+function initialOf(value: string): string {
+  return (value.trim()[0] ?? "?").toUpperCase();
+}
+
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60_000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `há ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "ontem";
+  return `há ${days} dias`;
 }
