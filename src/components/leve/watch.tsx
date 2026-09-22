@@ -1,21 +1,43 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, Eye } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { getPost, postMedia } from "@/lib/leve";
+import { getPost, getViewerKey, postMedia, registerPostView, type Post } from "@/lib/leve";
 import { CommentsSection } from "./overlays";
-import { Avatar, Logo, PersonLink } from "./primitives";
+import { Avatar, formatCount, Logo, PersonLink } from "./primitives";
 import { PostGallery } from "./media-gallery";
 import { PostOwnerMenu } from "./post-owner-menu";
 
 /** Página de abrir uma publicação (foto ou vídeo): a mesma página serve para os dois. Os comentários aparecem no fim. */
 export function Watch({ postId }: { postId: string }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const queryKey = ["post", postId, user?.id ?? null];
   const { data: post, isLoading } = useQuery({
-    queryKey: ["post", postId, user?.id ?? null],
+    queryKey,
     queryFn: () => getPost(postId, user?.id ?? null),
   });
   const isOwner = Boolean(user && post && user.id === post.user_id);
+
+  /* Conta a visualização quando a publicação abre (no máximo uma vez a cada
+     12 horas por pessoa/aparelho — a repetição fica a cargo do servidor). */
+  const registered = useRef<string | null>(null);
+  useEffect(() => {
+    if (!post || registered.current === post.id) return;
+    registered.current = post.id;
+    registerPostView(post.id, getViewerKey(user?.id ?? null))
+      .then((views) => {
+        if (views === null) return;
+        queryClient.setQueryData<Post | null>(queryKey, (current) =>
+          current ? { ...current, views } : current,
+        );
+      })
+      .catch(() => {
+        // Não é grave falhar a contagem de visualizações: ignora-se em silêncio.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id]);
 
   return (
     <div className="mx-auto min-h-dvh max-w-[600px] bg-background pb-10 text-foreground">
@@ -58,6 +80,10 @@ export function Watch({ postId }: { postId: string }) {
                   <p className="truncate text-[13px] text-muted-foreground">{post.caption}</p>
                 )}
               </PersonLink>
+              <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                <Eye className="size-3.5" aria-hidden="true" />
+                {formatCount(post.views)}
+              </span>
             </div>
           </article>
 

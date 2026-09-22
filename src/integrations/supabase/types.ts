@@ -174,6 +174,32 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          post_id: string
+          viewed_at: string
+          viewer_key: string
+        }
+        Insert: {
+          post_id: string
+          viewed_at?: string
+          viewer_key: string
+        }
+        Update: {
+          post_id?: string
+          viewed_at?: string
+          viewer_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           caption: string
@@ -290,6 +316,10 @@ export type Database = {
       }
       am_i_admin: { Args: never; Returns: boolean }
       my_phone_verified: { Args: never; Returns: boolean }
+      register_post_view: {
+        Args: { p_post_id: string; p_viewer_key: string }
+        Returns: number
+      }
       verify_my_account: { Args: { code: string }; Returns: boolean }
     }
     Enums: {

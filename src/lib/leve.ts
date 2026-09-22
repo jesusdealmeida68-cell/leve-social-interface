@@ -19,6 +19,7 @@ export type Post = {
   media_url: string | null;
   media_type: string;
   created_at: string;
+  views: number;
   author: Profile;
   likes: number;
   comments: number;
@@ -257,6 +258,7 @@ type PostRow = {
   media_url: string | null;
   media_type: string;
   created_at: string;
+  views: number;
 };
 
 async function decorate(rows: PostRow[], viewerId: string | null): Promise<Post[]> {
@@ -286,7 +288,7 @@ async function decorate(rows: PostRow[], viewerId: string | null): Promise<Post[
 export async function listFeed(viewerId: string | null, search = ""): Promise<Post[]> {
   let query = supabase
     .from("posts")
-    .select("id, user_id, caption, tags, media_url, media_type, created_at")
+    .select("id, user_id, caption, tags, media_url, media_type, created_at, views")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -307,7 +309,7 @@ export async function listFeed(viewerId: string | null, search = ""): Promise<Po
 export async function listPostsByUser(userId: string, viewerId: string | null): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, user_id, caption, tags, media_url, media_type, created_at")
+    .select("id, user_id, caption, tags, media_url, media_type, created_at, views")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -317,13 +319,48 @@ export async function listPostsByUser(userId: string, viewerId: string | null): 
 export async function getPost(postId: string, viewerId: string | null): Promise<Post | null> {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, user_id, caption, tags, media_url, media_type, created_at")
+    .select("id, user_id, caption, tags, media_url, media_type, created_at, views")
     .eq("id", postId)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const [post] = await decorate([data], viewerId);
   return post ?? null;
+}
+
+const ANON_VIEWER_KEY = "leve-viewer-id";
+
+/**
+ * Quem está a ver: o id da conta com sessão iniciada, ou um id aleatório
+ * guardado neste aparelho (para contar visualizações mesmo sem sessão).
+ */
+export function getViewerKey(userId: string | null): string {
+  if (userId) return userId;
+  try {
+    const stored = window.localStorage.getItem(ANON_VIEWER_KEY);
+    if (stored) return stored;
+    const created = crypto.randomUUID();
+    window.localStorage.setItem(ANON_VIEWER_KEY, created);
+    return created;
+  } catch {
+    // Sem armazenamento (ex.: separador privado): esta visita não fica marcada,
+    // por isso pode voltar a contar antes das 12 horas.
+    return crypto.randomUUID();
+  }
+}
+
+/**
+ * Conta uma visualização ao abrir a publicação, no máximo uma vez a cada 12
+ * horas por pessoa/aparelho. Devolve o total atualizado (ou o atual, se esta
+ * visita não contou porque já tinha visto há menos de 12 horas).
+ */
+export async function registerPostView(postId: string, viewerKey: string): Promise<number | null> {
+  const { data, error } = await supabase.rpc("register_post_view", {
+    p_post_id: postId,
+    p_viewer_key: viewerKey,
+  });
+  if (error) throw error;
+  return data;
 }
 
 /**
