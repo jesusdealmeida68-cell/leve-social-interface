@@ -6,6 +6,7 @@ import { getPost, postMedia } from "@/lib/leve";
 import { CommentsSection } from "./overlays";
 import { Avatar, Logo, PersonLink } from "./primitives";
 import { PostGallery } from "./media-gallery";
+import { PostOwnerMenu } from "./post-owner-menu";
 
 /** Página de abrir uma publicação (foto ou vídeo): a mesma página serve para os dois. Os comentários aparecem no fim. */
 export function Watch({ postId }: { postId: string }) {
@@ -14,6 +15,7 @@ export function Watch({ postId }: { postId: string }) {
     queryKey: ["post", postId, user?.id ?? null],
     queryFn: () => getPost(postId, user?.id ?? null),
   });
+  const isOwner = Boolean(user && post && user.id === post.user_id);
 
   return (
     <div className="mx-auto min-h-dvh max-w-[600px] bg-background pb-10 text-foreground">
@@ -26,6 +28,11 @@ export function Watch({ postId }: { postId: string }) {
           <ChevronLeft className="size-5" />
         </Link>
         <Logo />
+        {isOwner && post && (
+          <span className="ml-auto">
+            <PostOwnerMenu post={post} />
+          </span>
+        )}
       </header>
 
       {isLoading ? (

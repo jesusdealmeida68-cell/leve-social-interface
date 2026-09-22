@@ -372,6 +372,14 @@ export async function createPost(input: { userId: string; caption: string; media
   if (error) throw error;
 }
 
+export async function updatePost(postId: string, caption: string) {
+  const { error } = await supabase
+    .from("posts")
+    .update({ caption, tags: extractTags(caption) })
+    .eq("id", postId);
+  if (error) throw error;
+}
+
 export async function deletePost(postId: string) {
   const { error } = await supabase.from("posts").delete().eq("id", postId);
   if (error) throw error;
