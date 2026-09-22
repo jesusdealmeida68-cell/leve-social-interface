@@ -413,6 +413,22 @@ export async function adminRegenerateCode(targetId: string): Promise<string> {
   return data;
 }
 
+/** A própria pessoa confirma o número com o código de 6 dígitos que o admin lhe entregou.
+ * Devolve true se o código estava certo (e passa a estar verificado); false se estava errado.
+ * Um código só deixa de funcionar depois de ser usado com sucesso — sem limite de tempo. */
+export async function verifyMyAccount(code: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("verify_my_account", { code });
+  if (error) throw error;
+  return data ?? false;
+}
+
+/** Se o número da própria conta já está verificado (para mostrar/esconder o aviso). */
+export async function myPhoneVerified(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("my_phone_verified");
+  if (error) throw error;
+  return data ?? false;
+}
+
 /**
  * Lê os ficheiros de uma publicação. As publicações antigas (e as de um só ficheiro) guardam
  * apenas o endereço em `media_url`; as que têm vários ficheiros guardam ali uma lista em JSON.

@@ -9,6 +9,7 @@ import {
   countUnreadMessages,
   countUnreadNotifications,
   listNotifications,
+  myPhoneVerified,
   timeAgo,
 } from "@/lib/leve";
 import { Avatar, IconButton, Logo, PersonLink } from "./primitives";
@@ -280,6 +281,11 @@ export function NotificationPanel({ open, onClose }: { open: boolean; onClose: (
     queryFn: () => listNotifications(user!.id),
     enabled: open && Boolean(user),
   });
+  const { data: phoneVerified } = useQuery({
+    queryKey: ["my-phone-verified", user?.id ?? null],
+    queryFn: myPhoneVerified,
+    enabled: Boolean(user),
+  });
 
   if (!open) return null;
 
@@ -304,7 +310,7 @@ export function NotificationPanel({ open, onClose }: { open: boolean; onClose: (
         </div>
         {user && (
           <div className="px-1 pb-1">
-            <VerifyPhoneBanner verified={false} />
+            <VerifyPhoneBanner verified={Boolean(phoneVerified)} />
           </div>
         )}
         <ul>

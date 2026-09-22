@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Clock, ShieldCheck, ShieldOff } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,17 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { verifyMyAccount } from "@/lib/leve";
 
 /**
  * Aviso + modal de verificação de número, mostrado na página de notificações.
- * SÓ VISUAL por agora: não fala com a base de dados. Quando a migração for aplicada,
- * troca este estado local por uma chamada real (ex.: verifyPhoneCode(code)).
+ * Liga a `verify_my_account`: o código só é aceite se for mesmo o que o admin
+ * gerou/entregou para esta conta em "Administração → Verificação de número",
+ * e deixa de funcionar assim que é usado com sucesso.
  */
 export function VerifyPhoneBanner({ verified }: { verified: boolean }) {
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<"idle" | "confirmed">("idle");
+  const queryClient = useQueryClient();
 
-  if (verified || status === "confirmed") return null;
+  if (verified) return null;
 
   return (
     <>
@@ -45,8 +48,8 @@ export function VerifyPhoneBanner({ verified }: { verified: boolean }) {
         open={open}
         onClose={() => setOpen(false)}
         onConfirmed={() => {
-          setStatus("confirmed");
           setOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["my-phone-verified"] });
         }}
       />
     </>
@@ -64,21 +67,41 @@ function VerifyPhoneModal({
 }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     if (code.trim().length !== 6) {
       setError("O código tem 6 dígitos.");
       return;
     }
-    // Visual por agora: qualquer código de 6 dígitos confirma. A validação real
-    // (código único, entregue pelo admin, só expira depois de usado) vem com a migração.
-    onConfirmed();
+    setChecking(true);
+    try {
+      const correct = await verifyMyAccount(code.trim());
+      if (correct) {
+        onConfirmed();
+      } else {
+        setError("Código incorreto. Confirma o código que recebeste.");
+      }
+    } catch {
+      setError("Não foi possível verificar agora. Tenta novamente.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          onClose();
+          setCode("");
+          setError(null);
+        }
+      }}
+    >
       <DialogContent className="w-[calc(100%-1.5rem)] max-w-sm rounded-3xl text-center">
         <DialogHeader className="items-center text-center">
           <span className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
@@ -96,18 +119,20 @@ function VerifyPhoneModal({
             onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
             inputMode="numeric"
             autoFocus
+            disabled={checking}
             placeholder="000000"
             aria-label="Código de verificação"
-            className="h-14 w-full rounded-2xl bg-secondary text-center text-2xl font-bold tracking-[0.5em] outline-none focus:ring-2 focus:ring-ring"
+            className="h-14 w-full rounded-2xl bg-secondary text-center text-2xl font-bold tracking-[0.5em] outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
           />
           {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-          <Button type="submit" className="h-11 w-full rounded-full">
-            Confirmar
+          <Button type="submit" disabled={checking} className="h-11 w-full rounded-full">
+            {checking ? "A confirmar..." : "Confirmar"}
           </Button>
           <button
             type="button"
             onClick={onClose}
-            className="flex w-full items-center justify-center gap-1.5 py-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+            disabled={checking}
+            className="flex w-full items-center justify-center gap-1.5 py-1 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
           >
             <ShieldOff className="size-3.5" />
             Verificar mais tarde
