@@ -483,8 +483,8 @@ export function VideoPlayer({
         ref={videoRef}
         src={src}
         poster={poster}
-        muted
-        loop
+        muted={prefs.muted}
+        loop={prefs.loop}
         playsInline
         preload="metadata"
         aria-label={label}
