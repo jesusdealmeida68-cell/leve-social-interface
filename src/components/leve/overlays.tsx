@@ -21,7 +21,7 @@ import {
   uploadMedia,
   type Post,
 } from "@/lib/leve";
-import { ActionButton, Avatar, PersonLink, formatCount } from "./primitives";
+import { ActionButton, Avatar, PersonLink, VideoFrame, formatCount } from "./primitives";
 
 /* ------------------------------ Criar ------------------------------ */
 
@@ -209,7 +209,7 @@ function ComposerBody({ onClose }: { onClose: () => void }) {
                   className="relative aspect-square overflow-hidden rounded-xl bg-secondary"
                 >
                   {item.kind === "video" ? (
-                    <video src={item.url} muted playsInline className="size-full object-cover" />
+                    <VideoFrame src={item.url} className="size-full object-cover" />
                   ) : (
                     <img src={item.url} alt="" className="size-full object-cover" />
                   )}

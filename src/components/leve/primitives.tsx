@@ -197,6 +197,29 @@ export function ActionButton({
   );
 }
 
+/** Frame nítido de um vídeo em pausa (miniaturas). Sem isto, o telemóvel só decodifica
+ * metadados e mostra um primeiro frame preto/desfocado — parece "perda de qualidade",
+ * mas o ficheiro em si nunca é alterado. */
+export function VideoFrame({ src, className }: { src: string; className?: string }) {
+  return (
+    <video
+      src={src}
+      muted
+      playsInline
+      preload="metadata"
+      className={className}
+      onLoadedMetadata={(event) => {
+        const video = event.currentTarget;
+        try {
+          video.currentTime = Math.min(0.1, (video.duration || 1) / 4);
+        } catch {
+          /* alguns navegadores só permitem isto depois de 'canplay' */
+        }
+      }}
+    />
+  );
+}
+
 /** Miniatura de publicação para grelhas de 2 colunas (feed e perfil). Abre sempre a mesma página de visualização. */
 export function PostThumb({ post }: { post: Post }) {
   const items = postMedia(post);
@@ -211,7 +234,7 @@ export function PostThumb({ post }: { post: Post }) {
       className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl bg-secondary text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {cover.type === "video" ? (
-        <video src={cover.url} muted playsInline className="size-full object-cover" />
+        <VideoFrame src={cover.url} className="size-full object-cover" />
       ) : (
         <img
           src={cover.url}

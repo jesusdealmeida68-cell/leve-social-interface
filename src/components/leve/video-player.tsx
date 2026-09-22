@@ -489,7 +489,19 @@ export function VideoPlayer({
         preload="metadata"
         aria-label={label}
         className={`absolute inset-0 size-full ${contain ? "object-contain" : "object-cover"}`}
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onLoadedMetadata={(event) => {
+          setDuration(event.currentTarget.duration);
+          // Mostra um frame real em vez do primeiro frame (que em muitos telemóveis
+          // fica preto/desfocado antes de se carregar) — sem tocar no ficheiro original.
+          try {
+            event.currentTarget.currentTime = Math.min(
+              0.1,
+              (event.currentTarget.duration || 1) / 4,
+            );
+          } catch {
+            /* alguns navegadores só permitem isto depois de 'canplay' */
+          }
+        }}
         onPlay={() => {
           setPlaying(true);
           setStarted(true);
