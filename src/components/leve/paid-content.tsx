@@ -45,37 +45,12 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/leve";
 import { Avatar, PersonLink } from "./primitives";
 
-/** Autores de exemplo para os cartões de "Explorar" (só desenho, sem ligação real). */
-const authorJoel: Profile = {
-  id: "preview-joel",
-  username: "joelmota",
-  name: "Joel Mota",
-  bio: null,
-  avatar_url: null,
-  cover_url: null,
-};
-const authorLina: Profile = {
-  id: "preview-lina",
-  username: "linasousa",
-  name: "Lina Sousa",
-  bio: null,
-  avatar_url: null,
-  cover_url: null,
-};
-const authorEquipa: Profile = {
-  id: "preview-equipa",
-  username: "equipaleve",
-  name: "Equipa LEVE",
-  bio: null,
-  avatar_url: null,
-  cover_url: null,
-};
-
 /* ---------------------------------------------------------------------------
  * Página "Conteúdo pago" — SÓ VISUAL.
- * Nada aqui fala com o backend: os itens de exemplo (para explorar e os meus),
- * o estado "Verificado" e os botões de comprar/guardar/publicar são apenas
- * desenho. Quando houver ligação real, isto passa a vir da base de dados.
+ * Nada aqui fala com o backend: o estado "Verificado" e os botões de
+ * comprar/guardar/publicar são apenas desenho. Quando houver ligação real,
+ * os conteúdos (meus e para explorar) passam a vir da base de dados —
+ * por agora as listas ficam vazias, sem dados inventados.
  *
  * A página tem duas áreas bem separadas, alternadas por abas:
  * - "Explorar": conteúdo pago de outras pessoas, para descobrir e comprar.
@@ -126,62 +101,11 @@ const filters: { key: Filter; label: string }[] = [
   { key: "suspended", label: "Suspensos" },
 ];
 
-const previewItems: PaidItem[] = [
-  {
-    id: "1",
-    kind: "video",
-    status: "published",
-    title: "Vídeo exclusivo",
-    description: "Uma descrição breve sobre o conteúdo.",
-    price: 2500,
-    sales: 0,
-  },
-  {
-    id: "2",
-    kind: "photo",
-    status: "draft",
-    title: "Fotografias exclusivas",
-    description: "Uma descrição breve sobre o conteúdo.",
-    price: 1500,
-    sales: 0,
-  },
-  {
-    id: "3",
-    kind: "collection",
-    status: "suspended",
-    title: "Coleção exclusiva",
-    description: "Uma descrição breve sobre o conteúdo.",
-    price: 5000,
-    sales: 0,
-  },
-];
+/** Os conteúdos que publiquei para venda. Vazio até haver ligação real à base de dados. */
+const previewItems: PaidItem[] = [];
 
-const browseItems: BrowseItem[] = [
-  {
-    id: "b1",
-    kind: "video",
-    title: "Bastidores do estúdio",
-    description: "O processo completo, do esboço à peça final.",
-    price: 3000,
-    author: authorJoel,
-  },
-  {
-    id: "b2",
-    kind: "photo",
-    title: "Luanda ao fim do dia",
-    description: "Fotografias em alta resolução da série do Atlântico.",
-    price: 1800,
-    author: authorLina,
-  },
-  {
-    id: "b3",
-    kind: "collection",
-    title: "Coleção da semana",
-    description: "Uma seleção com os melhores conteúdos exclusivos.",
-    price: 4200,
-    author: authorEquipa,
-  },
-];
+/** Conteúdo pago de outras pessoas para descobrir. Vazio até haver ligação real à base de dados. */
+const browseItems: BrowseItem[] = [];
 
 /** Capas abstratas de representação (sem fotos de pessoas), uma por tipo de conteúdo. */
 const covers = { video: "bg-paid-a", photo: "bg-paid-b", collection: "bg-paid-c" } as const;
@@ -259,11 +183,23 @@ export function PaidContent() {
           </div>
 
           <ul className="space-y-5">
-            {browseItems.map((item) => (
-              <li key={item.id}>
-                <BrowseCard item={item} onBuy={() => setBuying(item)} />
+            {browseItems.length ? (
+              browseItems.map((item) => (
+                <li key={item.id}>
+                  <BrowseCard item={item} onBuy={() => setBuying(item)} />
+                </li>
+              ))
+            ) : (
+              <li className="grid min-h-48 place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
+                <div>
+                  <Compass className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
+                  <p className="mt-3 text-sm font-semibold">Ainda sem conteúdo para descobrir</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Quando outras pessoas publicarem conteúdo pago, aparece aqui.
+                  </p>
+                </div>
               </li>
-            ))}
+            )}
           </ul>
         </main>
       ) : (
