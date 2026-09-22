@@ -12,6 +12,7 @@ import {
   timeAgo,
 } from "@/lib/leve";
 import { Avatar, IconButton, Logo, PersonLink } from "./primitives";
+import { VerifyPhoneBanner } from "./verify-phone";
 import type { Section } from "./data";
 
 export const nav = [
@@ -301,6 +302,11 @@ export function NotificationPanel({ open, onClose }: { open: boolean; onClose: (
             <X />
           </IconButton>
         </div>
+        {user && (
+          <div className="px-1 pb-1">
+            <VerifyPhoneBanner verified={false} />
+          </div>
+        )}
         <ul>
           {!user ? (
             <li className="px-4 py-6 text-center text-sm text-muted-foreground">
