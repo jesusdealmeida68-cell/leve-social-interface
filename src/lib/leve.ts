@@ -669,3 +669,123 @@ export async function countUnreadNotifications(myId: string): Promise<number> {
   if (error) throw error;
   return count ?? 0;
 }
+
+/* ------------------------------ Conteúdo pago ------------------------------ */
+
+export type PaidKind = "video" | "photo" | "collection";
+export type PaidStatus = "published" | "draft" | "suspended";
+
+export type PaidItem = {
+  id: string;
+  seller_id: string;
+  kind: PaidKind;
+  status: PaidStatus;
+  title: string;
+  description: string;
+  price: number;
+  media_url: string | null;
+  media_type: string | null;
+  sales: number;
+  created_at: string;
+  seller: Profile;
+};
+
+const PAID_FIELDS =
+  "id, seller_id, kind, status, title, description, price, media_url, media_type, sales, created_at";
+
+type PaidRow = Omit<PaidItem, "seller" | "kind" | "status"> & { kind: string; status: string };
+
+async function withSellers(rows: PaidRow[]): Promise<PaidItem[]> {
+  if (rows.length === 0) return [];
+  const { data: sellers } = await supabase
+    .from("profiles")
+    .select(PROFILE_FIELDS)
+    .in("id", Array.from(new Set(rows.map((row) => row.seller_id))));
+  const map = fromRows(sellers ?? []);
+  return rows.map((row) => ({
+    ...row,
+    kind: (row.kind as PaidKind) ?? "video",
+    status: (row.status as PaidStatus) ?? "published",
+    seller: map.get(row.seller_id) ?? unknownProfile(row.seller_id),
+  }));
+}
+
+/** Se a própria conta tem o selo (só com selo é possível vender conteúdo). */
+export async function myVerified(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("my_verified");
+  if (error) throw error;
+  return data ?? false;
+}
+
+/** Conteúdos pagos de outras pessoas, para descobrir e comprar. */
+export async function listPaidItems(viewerId: string | null): Promise<PaidItem[]> {
+  const { data, error } = await supabase
+    .from("paid_items")
+    .select(PAID_FIELDS)
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  const rows = (data ?? []).filter((row) => row.seller_id !== viewerId) as PaidRow[];
+  return withSellers(rows);
+}
+
+/** Os conteúdos pagos que eu publiquei. */
+export async function listMyPaidItems(userId: string): Promise<PaidItem[]> {
+  const { data, error } = await supabase
+    .from("paid_items")
+    .select(PAID_FIELDS)
+    .eq("seller_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return withSellers((data ?? []) as PaidRow[]);
+}
+
+export async function createPaidItem(input: {
+  userId: string;
+  kind: PaidKind;
+  title: string;
+  description: string;
+  price: number;
+  media: MediaItem | null;
+  status: PaidStatus;
+}) {
+  const { error } = await supabase.from("paid_items").insert({
+    seller_id: input.userId,
+    kind: input.kind,
+    status: input.status,
+    title: input.title,
+    description: input.description,
+    price: input.price,
+    media_url: input.media?.url ?? null,
+    media_type: input.media?.type ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function setPaidItemStatus(itemId: string, status: PaidStatus) {
+  const { error } = await supabase.from("paid_items").update({ status }).eq("id", itemId);
+  if (error) throw error;
+}
+
+export async function deletePaidItem(itemId: string) {
+  const { error } = await supabase.from("paid_items").delete().eq("id", itemId);
+  if (error) throw error;
+}
+
+/** Compras feitas por mim (ids dos conteúdos já desbloqueados). */
+export async function listMyPurchaseIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("paid_purchases")
+    .select("item_id")
+    .eq("buyer_id", userId);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.item_id);
+}
+
+export async function buyPaidItem(itemId: string, userId: string, price: number) {
+  const { error } = await supabase
+    .from("paid_purchases")
+    .insert({ item_id: itemId, buyer_id: userId, price });
+  if (error && error.code !== "23505") throw error;
+}
