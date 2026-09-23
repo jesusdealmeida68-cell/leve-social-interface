@@ -1,28 +1,26 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
-  Ban,
   BadgeCheck,
+  Ban,
+  Check,
   ChevronLeft,
   Compass,
   Crown,
-  Eye,
   ImagePlus,
   Image as ImageIcon,
   Images,
-  Link2,
+  Loader2,
   Lock,
   MoreHorizontal,
-  Pencil,
   Plus,
-  Receipt,
+  ShieldAlert,
   ShoppingBag,
   Sparkles,
-  Tag,
-  TriangleAlert,
+  Trash2,
   Video,
-  Wallet,
 } from "lucide-react";
-import { useEffect, useId, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,46 +39,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/auth";
+import {
+  buyPaidItem,
+  createPaidItem,
+  deletePaidItem,
+  listMyPaidItems,
+  listMyPurchaseIds,
+  listPaidItems,
+  myVerified,
+  setPaidItemStatus,
+  uploadMedia,
+  type PaidItem,
+  type PaidKind,
+  type PaidStatus,
+} from "@/lib/leve";
 import { cn } from "@/lib/utils";
-import type { Profile } from "@/lib/leve";
 import { Avatar, PersonLink } from "./primitives";
+import { GridSkeleton } from "./loading";
 
 /* ---------------------------------------------------------------------------
- * Página "Conteúdo pago" — SÓ VISUAL.
- * Nada aqui fala com o backend: o estado "Verificado" e os botões de
- * comprar/guardar/publicar são apenas desenho. Quando houver ligação real,
- * os conteúdos (meus e para explorar) passam a vir da base de dados —
- * por agora as listas ficam vazias, sem dados inventados.
- *
- * A página tem duas áreas bem separadas, alternadas por abas:
- * - "Explorar": conteúdo pago de outras pessoas, para descobrir e comprar.
- * - "Os meus conteúdos": o que eu publiquei para venda, com o botão de criar.
+ * Conteúdo pago — ligado à base de dados.
+ * Só contas com selo de verificação podem publicar/vender conteúdo pago.
  * ------------------------------------------------------------------------- */
 
 type View = "explore" | "mine";
-
-type Kind = "video" | "photo" | "collection";
-type Status = "published" | "draft" | "suspended";
-type Filter = "all" | Status;
-
-type PaidItem = {
-  id: string;
-  kind: Kind;
-  status: Status;
-  title: string;
-  description: string;
-  price: number;
-  sales: number;
-};
-
-type BrowseItem = {
-  id: string;
-  kind: Kind;
-  title: string;
-  description: string;
-  price: number;
-  author: Profile;
-};
 
 const kinds = {
   video: { label: "Vídeo exclusivo", short: "Vídeo", icon: Video },
@@ -94,20 +77,6 @@ const statuses = {
   suspended: { label: "Suspenso", className: "bg-amber-500/20 text-amber-300" },
 } as const;
 
-const filters: { key: Filter; label: string }[] = [
-  { key: "all", label: "Todos" },
-  { key: "published", label: "Publicados" },
-  { key: "draft", label: "Rascunhos" },
-  { key: "suspended", label: "Suspensos" },
-];
-
-/** Os conteúdos que publiquei para venda. Vazio até haver ligação real à base de dados. */
-const previewItems: PaidItem[] = [];
-
-/** Conteúdo pago de outras pessoas para descobrir. Vazio até haver ligação real à base de dados. */
-const browseItems: BrowseItem[] = [];
-
-/** Capas abstratas de representação (sem fotos de pessoas), uma por tipo de conteúdo. */
 const covers = { video: "bg-paid-a", photo: "bg-paid-b", collection: "bg-paid-c" } as const;
 
 const formatKz = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -118,13 +87,42 @@ const tabs: { key: View; label: string; icon: typeof Compass }[] = [
 ];
 
 export function PaidContent() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<View>("explore");
-  const [filter, setFilter] = useState<Filter>("all");
   const [creating, setCreating] = useState(false);
-  const [detail, setDetail] = useState<PaidItem | null>(null);
-  const [buying, setBuying] = useState<BrowseItem | null>(null);
+  const [buying, setBuying] = useState<PaidItem | null>(null);
 
-  const visible = filter === "all" ? previewItems : previewItems.filter((i) => i.status === filter);
+  const verifiedQuery = useQuery({
+    queryKey: ["my-verified", user?.id ?? null],
+    queryFn: myVerified,
+    enabled: Boolean(user),
+  });
+  const hasBadge = verifiedQuery.data === true;
+
+  const exploreQuery = useQuery({
+    queryKey: ["paid-items", user?.id ?? null],
+    queryFn: () => listPaidItems(user?.id ?? null),
+  });
+
+  const mineQuery = useQuery({
+    queryKey: ["my-paid-items", user?.id ?? null],
+    queryFn: () => listMyPaidItems(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const purchasesQuery = useQuery({
+    queryKey: ["my-purchases", user?.id ?? null],
+    queryFn: () => listMyPurchaseIds(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const refreshMine = () => {
+    queryClient.invalidateQueries({ queryKey: ["my-paid-items"] });
+    queryClient.invalidateQueries({ queryKey: ["paid-items"] });
+  };
+
+  const bought = new Set(purchasesQuery.data ?? []);
 
   return (
     <div className="mx-auto min-h-dvh max-w-[640px] bg-background pb-14 text-foreground">
@@ -162,7 +160,7 @@ export function PaidContent() {
               className={cn(
                 "flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 selected
-                  ? "bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_oklch(0.63_0.22_18/0.8)]"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground",
               )}
             >
@@ -178,44 +176,59 @@ export function PaidContent() {
           <div>
             <h2 className="font-display text-xl font-semibold">Descobre conteúdo novo</h2>
             <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">
-              Vídeos, fotografias e coleções exclusivas de outros criadores do LEVE.
+              Vídeos, fotografias e coleções exclusivas de criadores verificados do LEVE.
             </p>
           </div>
 
-          <ul className="space-y-5">
-            {browseItems.length ? (
-              browseItems.map((item) => (
-                <li key={item.id}>
-                  <BrowseCard item={item} onBuy={() => setBuying(item)} />
-                </li>
-              ))
-            ) : (
-              <li className="grid min-h-48 place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
-                <div>
-                  <Compass className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
-                  <p className="mt-3 text-sm font-semibold">Ainda sem conteúdo para descobrir</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Quando outras pessoas publicarem conteúdo pago, aparece aqui.
-                  </p>
-                </div>
-              </li>
-            )}
-          </ul>
+          {exploreQuery.isLoading ? (
+            <GridSkeleton />
+          ) : (
+            <ul className="space-y-5">
+              {(exploreQuery.data ?? []).length ? (
+                (exploreQuery.data ?? []).map((item) => (
+                  <li key={item.id}>
+                    <BrowseCard
+                      item={item}
+                      owned={bought.has(item.id)}
+                      onBuy={() => setBuying(item)}
+                    />
+                  </li>
+                ))
+              ) : (
+                <Empty
+                  icon={Compass}
+                  title="Ainda sem conteúdo para descobrir"
+                  text="Quando criadores verificados publicarem conteúdo pago, aparece aqui."
+                />
+              )}
+            </ul>
+          )}
         </main>
       ) : (
         <main className="space-y-7 px-5 pt-6">
-          <section aria-labelledby="verificacao" className="rounded-3xl bg-card p-5">
-            <h2 id="verificacao" className="text-sm font-semibold text-muted-foreground">
-              Estado de verificação
-            </h2>
+          <section className="rounded-3xl bg-card p-5">
+            <h2 className="text-sm font-semibold text-muted-foreground">Estado de verificação</h2>
             <div className="mt-4 flex items-center gap-4">
-              <span className="grid size-14 shrink-0 place-items-center rounded-full bg-sky-500/15">
-                <BadgeCheck className="size-8 fill-sky-500 text-white" aria-hidden="true" />
+              <span
+                className={cn(
+                  "grid size-14 shrink-0 place-items-center rounded-full",
+                  hasBadge ? "bg-sky-500/15" : "bg-muted",
+                )}
+              >
+                {hasBadge ? (
+                  <BadgeCheck className="size-8 text-sky-400" aria-hidden="true" />
+                ) : (
+                  <ShieldAlert className="size-7 text-muted-foreground" aria-hidden="true" />
+                )}
               </span>
               <div className="min-w-0">
-                <p className="font-display text-xl font-bold">Verificado</p>
+                <p className="font-display text-xl font-bold">
+                  {hasBadge ? "Verificado" : "Sem selo"}
+                </p>
                 <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                  Podes publicar e vender conteúdos Premium
+                  {hasBadge
+                    ? "Podes publicar e vender conteúdos Premium."
+                    : "Só contas com selo podem vender conteúdo. O selo é dado pela administração."}
                 </p>
               </div>
             </div>
@@ -223,69 +236,41 @@ export function PaidContent() {
 
           <Button
             type="button"
+            disabled={!hasBadge}
             onClick={() => setCreating(true)}
-            className="h-12 w-full rounded-2xl text-[15px] font-bold shadow-[0_10px_28px_-10px_oklch(0.63_0.22_18/0.75)] transition-transform active:scale-[0.98]"
+            className="h-12 w-full rounded-2xl text-[15px] font-bold transition-transform active:scale-[0.98] disabled:opacity-50"
           >
-            <Plus className="size-5" />
-            Criar conteúdo pago
+            {hasBadge ? <Plus className="size-5" /> : <Lock className="size-5" />}
+            {hasBadge ? "Criar conteúdo pago" : "Precisas do selo para vender"}
           </Button>
 
-          <section aria-labelledby="meus-conteudos">
-            <h2 id="meus-conteudos" className="font-display text-lg font-semibold">
-              Os meus conteúdos
-            </h2>
+          <section>
+            <h2 className="font-display text-lg font-semibold">Os meus conteúdos</h2>
             <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
               O que publicaste para venda, e como está a vender.
             </p>
 
-            <div
-              role="group"
-              aria-label="Filtrar conteúdos"
-              className="scrollbar-none -mx-5 mt-4 flex gap-2 overflow-x-auto px-5"
-            >
-              {filters.map((item) => {
-                const selected = item.key === filter;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setFilter(item.key)}
-                    className={cn(
-                      "h-10 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      selected
-                        ? "bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_oklch(0.63_0.22_18/0.8)]"
-                        : "bg-secondary text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <ul className="mt-5 space-y-5">
-              {visible.length ? (
-                visible.map((item) => (
-                  <li
-                    key={item.id}
-                    className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
-                  >
-                    <ContentCard item={item} onOpen={() => setDetail(item)} />
-                  </li>
-                ))
-              ) : (
-                <li className="grid min-h-48 place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
-                  <div>
-                    <Crown className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
-                    <p className="mt-3 text-sm font-semibold">Nenhum conteúdo aqui</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Os conteúdos deste estado aparecem nesta lista.
-                    </p>
-                  </div>
-                </li>
-              )}
-            </ul>
+            {mineQuery.isLoading ? (
+              <div className="mt-5">
+                <GridSkeleton />
+              </div>
+            ) : (
+              <ul className="mt-5 space-y-5">
+                {(mineQuery.data ?? []).length ? (
+                  (mineQuery.data ?? []).map((item) => (
+                    <li key={item.id} className="animate-in fade-in-0 duration-300">
+                      <MineCard item={item} onChanged={refreshMine} />
+                    </li>
+                  ))
+                ) : (
+                  <Empty
+                    icon={Crown}
+                    title="Nenhum conteúdo aqui"
+                    text="Cria o teu primeiro conteúdo Premium para começar a vender."
+                  />
+                )}
+              </ul>
+            )}
           </section>
         </main>
       )}
@@ -296,22 +281,97 @@ export function PaidContent() {
             <DialogTitle className="font-display text-xl">Criar conteúdo pago</DialogTitle>
             <DialogDescription>Preenche os detalhes do teu conteúdo Premium.</DialogDescription>
           </DialogHeader>
-          <CreateForm />
+          <CreateForm
+            onDone={() => {
+              setCreating(false);
+              refreshMine();
+            }}
+          />
         </DialogContent>
       </Dialog>
 
-      <Dialog open={detail !== null} onOpenChange={(open) => !open && setDetail(null)}>
-        {detail && <DetailContent item={detail} />}
-      </Dialog>
-
       <Dialog open={buying !== null} onOpenChange={(open) => !open && setBuying(null)}>
-        {buying && <PurchaseContent item={buying} />}
+        {buying && (
+          <PurchaseDialog
+            item={buying}
+            onDone={() => {
+              setBuying(null);
+              queryClient.invalidateQueries({ queryKey: ["my-purchases"] });
+              queryClient.invalidateQueries({ queryKey: ["paid-items"] });
+            }}
+          />
+        )}
       </Dialog>
     </div>
   );
 }
 
-function StatusBadge({ status, className }: { status: Status; className?: string }) {
+/* ------------------------------ Peças ------------------------------ */
+
+function Empty({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof Compass;
+  title: string;
+  text: string;
+}) {
+  return (
+    <li className="grid min-h-48 list-none place-items-center rounded-3xl border border-dashed border-border px-6 text-center">
+      <div>
+        <Icon className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
+        <p className="mt-3 text-sm font-semibold">{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+      </div>
+    </li>
+  );
+}
+
+function Cover({
+  item,
+  revealed,
+  className,
+}: {
+  item: PaidItem;
+  revealed: boolean;
+  className?: string;
+}) {
+  const Icon = kinds[item.kind].icon;
+  if (revealed && item.media_url) {
+    return item.media_type === "video" ? (
+      <video
+        src={item.media_url}
+        controls
+        playsInline
+        className={cn("aspect-[16/10] w-full bg-black object-cover", className)}
+      />
+    ) : (
+      <img
+        src={item.media_url}
+        alt={item.title}
+        className={cn("aspect-[16/10] w-full bg-black object-cover", className)}
+      />
+    );
+  }
+  return (
+    <div
+      className={cn("relative grid aspect-[16/10] place-items-center", covers[item.kind], className)}
+    >
+      <Icon className="size-12 text-white/35" strokeWidth={1.4} aria-hidden="true" />
+    </div>
+  );
+}
+
+function KindPill({ kind }: { kind: PaidKind }) {
+  return (
+    <span className="inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
+      {kinds[kind].label}
+    </span>
+  );
+}
+
+function StatusBadge({ status, className }: { status: PaidStatus; className?: string }) {
   const meta = statuses[status];
   return (
     <span
@@ -326,38 +386,42 @@ function StatusBadge({ status, className }: { status: Status; className?: string
   );
 }
 
-function Cover({ kind, className }: { kind: Kind; className?: string }) {
-  const Icon = kinds[kind].icon;
-  return (
-    <div className={cn("relative grid aspect-[16/10] place-items-center", covers[kind], className)}>
-      <Icon className="size-12 text-white/35" strokeWidth={1.4} aria-hidden="true" />
-    </div>
-  );
-}
-
-function BrowseCard({ item, onBuy }: { item: BrowseItem; onBuy: () => void }) {
+function BrowseCard({
+  item,
+  owned,
+  onBuy,
+}: {
+  item: PaidItem;
+  owned: boolean;
+  onBuy: () => void;
+}) {
   return (
     <article className="overflow-hidden rounded-3xl bg-card">
       <div className="relative">
-        <Cover kind={item.kind} />
-        <span className="absolute left-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-full bg-black/50 px-3 text-xs font-bold text-white backdrop-blur">
-          <Lock className="size-3.5" aria-hidden="true" />
-          Bloqueado
-        </span>
+        <Cover item={item} revealed={owned} />
+        {!owned && (
+          <span className="absolute left-3 top-3 inline-flex h-8 items-center gap-1.5 rounded-full bg-black/50 px-3 text-xs font-bold text-white backdrop-blur">
+            <Lock className="size-3.5" aria-hidden="true" />
+            Bloqueado
+          </span>
+        )}
       </div>
 
       <div className="p-5">
-        <PersonLink person={item.author} className="flex items-center gap-2.5 hover:opacity-80">
-          <Avatar person={item.author} size="sm" />
-          <span className="min-w-0 text-sm font-semibold">{item.author.name}</span>
+        <PersonLink person={item.seller} className="flex items-center gap-2.5 hover:opacity-80">
+          <Avatar person={item.seller} size="sm" />
+          <span className="min-w-0 text-sm font-semibold">{item.seller.name}</span>
+          <BadgeCheck className="size-4 shrink-0 text-sky-400" aria-hidden="true" />
         </PersonLink>
 
-        <span className="mt-4 inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
-          {kinds[item.kind].label}
-        </span>
+        <div className="mt-4">
+          <KindPill kind={item.kind} />
+        </div>
 
         <h3 className="mt-4 font-display text-xl font-bold leading-tight">{item.title}</h3>
-        <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">{item.description}</p>
+        {item.description && (
+          <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">{item.description}</p>
+        )}
 
         <div className="my-5 h-px bg-border" />
 
@@ -368,34 +432,45 @@ function BrowseCard({ item, onBuy }: { item: BrowseItem; onBuy: () => void }) {
               {formatKz(item.price)} Kz
             </p>
           </div>
-          <Button type="button" onClick={onBuy} className="h-11 rounded-full px-6 font-bold">
-            Comprar
-          </Button>
+          {owned ? (
+            <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-secondary px-5 text-sm font-bold">
+              <Check className="size-4" /> Comprado
+            </span>
+          ) : (
+            <Button type="button" onClick={onBuy} className="h-11 rounded-full px-6 font-bold">
+              Comprar
+            </Button>
+          )}
         </div>
       </div>
     </article>
   );
 }
 
-function PurchaseContent({ item }: { item: BrowseItem }) {
+function PurchaseDialog({ item, onDone }: { item: PaidItem; onDone: () => void }) {
+  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+
+  const buy = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Precisas de entrar para comprar.");
+      await buyPaidItem(item.id, user.id, item.price);
+    },
+    onSuccess: onDone,
+    onError: (err) => setError(err instanceof Error ? err.message : "Algo correu mal."),
+  });
+
   return (
     <DialogContent className="w-[calc(100%-1.5rem)] max-w-md gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
-      <Cover kind={item.kind} />
+      <Cover item={item} revealed={false} />
       <div className="space-y-5 p-5">
         <div>
-          <span className="inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
-            {kinds[item.kind].label}
-          </span>
+          <KindPill kind={item.kind} />
           <DialogTitle className="mt-3 font-display text-xl font-bold">{item.title}</DialogTitle>
           <DialogDescription className="mt-1.5 text-[15px] leading-6">
-            {item.description}
+            {item.description || "Conteúdo exclusivo."}
           </DialogDescription>
         </div>
-
-        <PersonLink person={item.author} className="flex items-center gap-2.5 hover:opacity-80">
-          <Avatar person={item.author} size="sm" />
-          <span className="min-w-0 text-sm font-semibold">De {item.author.name}</span>
-        </PersonLink>
 
         <div>
           <p className="text-sm text-muted-foreground">Vais pagar</p>
@@ -404,11 +479,15 @@ function PurchaseContent({ item }: { item: BrowseItem }) {
           </p>
         </div>
 
-        <p className="rounded-2xl bg-secondary px-4 py-3.5 text-sm leading-5 text-muted-foreground">
-          Recebes o link de acesso assim que o pagamento for confirmado.
-        </p>
+        {error && <p className="text-sm font-medium text-destructive">{error}</p>}
 
-        <Button type="button" className="h-12 w-full rounded-2xl font-bold">
+        <Button
+          type="button"
+          disabled={buy.isPending}
+          onClick={() => buy.mutate()}
+          className="h-12 w-full rounded-2xl font-bold"
+        >
+          {buy.isPending && <Loader2 className="size-4 animate-spin" />}
           Confirmar compra
         </Button>
       </div>
@@ -416,35 +495,62 @@ function PurchaseContent({ item }: { item: BrowseItem }) {
   );
 }
 
-function ContentCard({ item, onOpen }: { item: PaidItem; onOpen: () => void }) {
+function MineCard({ item, onChanged }: { item: PaidItem; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  const run = async (action: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await action();
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <article className="overflow-hidden rounded-3xl bg-card">
       <div className="relative">
-        <Cover kind={item.kind} />
+        <Cover item={item} revealed />
         <StatusBadge status={item.status} className="absolute left-3 top-3" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={`Opções de ${item.title}`}
+              disabled={busy}
               className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <MoreHorizontal className="size-5" />
+              {busy ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <MoreHorizontal className="size-5" />
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5">
-            <DropdownMenuItem className="gap-3 rounded-xl py-2.5">
-              <Pencil className="size-4" /> Editar conteúdo
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-3 rounded-xl py-2.5">
-              <Tag className="size-4" /> Alterar preço
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-3 rounded-xl py-2.5" onSelect={onOpen}>
-              <Eye className="size-4" /> Consultar detalhes
-            </DropdownMenuItem>
+            {item.status !== "published" && (
+              <DropdownMenuItem
+                className="gap-3 rounded-xl py-2.5"
+                onSelect={() => run(() => setPaidItemStatus(item.id, "published"))}
+              >
+                <Check className="size-4" /> Pôr à venda
+              </DropdownMenuItem>
+            )}
+            {item.status === "published" && (
+              <DropdownMenuItem
+                className="gap-3 rounded-xl py-2.5"
+                onSelect={() => run(() => setPaidItemStatus(item.id, "draft"))}
+              >
+                <Ban className="size-4" /> Retirar da venda
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-3 rounded-xl py-2.5 text-destructive focus:text-destructive">
-              <Ban className="size-4" /> Retirar da venda
+            <DropdownMenuItem
+              className="gap-3 rounded-xl py-2.5 text-destructive focus:text-destructive"
+              onSelect={() => run(() => deletePaidItem(item.id))}
+            >
+              <Trash2 className="size-4" /> Apagar conteúdo
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -452,27 +558,14 @@ function ContentCard({ item, onOpen }: { item: PaidItem; onOpen: () => void }) {
 
       <div className="p-5">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex h-8 items-center rounded-full bg-violet-500/20 px-3.5 text-[13px] font-semibold text-violet-300">
-            {kinds[item.kind].label}
-          </span>
+          <KindPill kind={item.kind} />
           <Lock className="size-5 text-primary" aria-hidden="true" />
         </div>
 
-        <button
-          type="button"
-          onClick={onOpen}
-          className="mt-4 block rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <h3 className="font-display text-xl font-bold leading-tight">{item.title}</h3>
-        </button>
-        <p className="mt-1.5 line-clamp-2 text-[15px] leading-6 text-muted-foreground">
-          {item.description}
-        </p>
-
-        {item.status === "suspended" && (
-          <p className="mt-3 flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-sm leading-5 text-amber-200">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            Conteúdo suspenso: não está disponível para compra.
+        <h3 className="mt-4 font-display text-xl font-bold leading-tight">{item.title}</h3>
+        {item.description && (
+          <p className="mt-1.5 line-clamp-2 text-[15px] leading-6 text-muted-foreground">
+            {item.description}
           </p>
         )}
 
@@ -495,234 +588,159 @@ function ContentCard({ item, onOpen }: { item: PaidItem; onOpen: () => void }) {
   );
 }
 
-function DetailContent({ item }: { item: PaidItem }) {
-  return (
-    <DialogContent className="max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-md gap-0 overflow-y-auto rounded-3xl p-0 sm:rounded-3xl">
-      <Cover kind={item.kind} />
-      <div className="space-y-5 p-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={item.status} />
-            <span className="text-sm text-muted-foreground">{kinds[item.kind].short}</span>
-          </div>
-          <DialogTitle className="mt-3 font-display text-xl font-bold">{item.title}</DialogTitle>
-          <DialogDescription className="mt-1.5 text-[15px] leading-6">
-            {item.description}
-          </DialogDescription>
-        </div>
+/* ------------------------------ Criar ------------------------------ */
 
-        <div>
-          <p className="text-sm text-muted-foreground">Preço atual</p>
-          <p className="font-display text-3xl font-extrabold tracking-tight">
-            {formatKz(item.price)} Kz
-          </p>
-        </div>
+function CreateForm({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [kind, setKind] = useState<PaidKind>("video");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-        <dl className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-secondary p-4">
-            <dt className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <ShoppingBag className="size-4" aria-hidden="true" /> Compras confirmadas
-            </dt>
-            <dd className="mt-2 font-display text-2xl font-bold">{item.sales}</dd>
-          </div>
-          <div className="rounded-2xl bg-secondary p-4">
-            <dt className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <Wallet className="size-4" aria-hidden="true" /> Receita
-            </dt>
-            <dd className="mt-2 font-display text-2xl font-bold">
-              {formatKz(item.sales * item.price)} Kz
-            </dd>
-          </div>
-        </dl>
-
-        <section aria-labelledby={`historico-${item.id}`}>
-          <h3 id={`historico-${item.id}`} className="text-sm font-semibold">
-            Histórico de vendas
-          </h3>
-          <div className="mt-2 grid min-h-28 place-items-center rounded-2xl border border-dashed border-border px-4 text-center">
-            <div>
-              <Receipt className="mx-auto size-5 text-muted-foreground" aria-hidden="true" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                As vendas confirmadas aparecem aqui.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section aria-labelledby={`link-${item.id}`}>
-          <h3 id={`link-${item.id}`} className="text-sm font-semibold">
-            Link de acesso
-          </h3>
-          <p className="mt-2 flex items-center gap-3 rounded-2xl bg-secondary px-4 py-3.5 text-sm">
-            <Lock className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span className="tracking-[0.25em] text-muted-foreground" aria-label="Link oculto">
-              ••••••••••••
-            </span>
-          </p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Só tu vês este link. O comprador recebe-o depois de o pagamento ser confirmado.
-          </p>
-        </section>
-      </div>
-    </DialogContent>
-  );
-}
-
-const kindOptions: Kind[] = ["video", "photo", "collection"];
-
-const fieldClass = "h-12 rounded-2xl border-transparent bg-secondary px-4 shadow-none";
-
-function CreateForm() {
-  const base = useId();
-  const [kind, setKind] = useState<Kind>("video");
-  const [preview, setPreview] = useState<{ url: string; video: boolean } | null>(null);
-
-  // Liberta a pré-visualização anterior quando se troca de ficheiro ou se fecha o formulário.
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview.url);
-    },
-    [preview],
-  );
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const pick = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const video = file.type.startsWith("video/");
-    if (!video && !file.type.startsWith("image/")) return;
-    setPreview({ url: URL.createObjectURL(file), video });
+    const chosen = event.target.files?.[0];
+    if (!chosen) return;
+    setFile(chosen);
+    setPreview(URL.createObjectURL(chosen));
+    setKind(chosen.type.startsWith("video/") ? "video" : "photo");
+  };
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Precisas de entrar.");
+      const media = file ? await uploadMedia(file, user.id) : null;
+      await createPaidItem({
+        userId: user.id,
+        kind,
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price) || 0,
+        media,
+        status: "published",
+      });
+    },
+    onSuccess: onDone,
+    onError: (err) =>
+      setError(
+        err instanceof Error && err.message.includes("row-level security")
+          ? "Só contas com selo podem vender conteúdo."
+          : err instanceof Error
+            ? err.message
+            : "Algo correu mal.",
+      ),
+  });
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    if (!title.trim()) {
+      setError("Dá um título ao conteúdo.");
+      return;
+    }
+    if (!Number(price)) {
+      setError("Define um preço.");
+      return;
+    }
+    create.mutate();
   };
 
   return (
-    <div className="grid gap-4">
-      <label className="group relative grid aspect-[16/10] cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-input bg-secondary/60 transition-colors focus-within:ring-2 focus-within:ring-ring hover:border-primary">
+    <form onSubmit={submit} className="space-y-4">
+      <div>
+        <Label className="text-sm">Tipo</Label>
+        <div className="mt-2 flex gap-2">
+          {(Object.keys(kinds) as PaidKind[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setKind(key)}
+              className={cn(
+                "h-10 flex-1 rounded-xl text-sm font-semibold transition-colors",
+                kind === key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground",
+              )}
+            >
+              {kinds[key].short}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="paid-title">Título</Label>
+        <Input
+          id="paid-title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Ex.: Sessão completa em estúdio"
+          className="mt-1.5"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="paid-desc">Descrição</Label>
+        <Textarea
+          id="paid-desc"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="O que a pessoa recebe ao comprar."
+          className="mt-1.5 min-h-20"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="paid-price">Preço (Kz)</Label>
+        <Input
+          id="paid-price"
+          value={price}
+          inputMode="numeric"
+          onChange={(event) => setPrice(event.target.value.replace(/\D/g, ""))}
+          placeholder="5000"
+          className="mt-1.5"
+        />
+      </div>
+
+      <div>
+        <Label>Ficheiro</Label>
         <input
+          ref={fileRef}
           type="file"
           accept="image/*,video/*"
+          hidden
           onChange={pick}
-          aria-label="Carregar capa ou vídeo de representação"
-          className="sr-only"
         />
-        {preview ? (
-          <>
-            {preview.video ? (
-              <video
-                src={preview.url}
-                muted
-                playsInline
-                autoPlay
-                loop
-                className="size-full object-cover"
-              />
-            ) : (
-              <img
-                src={preview.url}
-                alt="Pré-visualização da capa"
-                className="size-full object-cover"
-              />
-            )}
-            <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
-              Trocar
-            </span>
-          </>
-        ) : (
-          <span className="flex flex-col items-center gap-2 px-4 text-center">
-            <span className="grid size-12 place-items-center rounded-full bg-primary/15 text-primary transition-transform group-hover:scale-105">
-              <ImagePlus className="size-6" aria-hidden="true" />
-            </span>
-            <span className="text-sm font-semibold">Carregar capa ou vídeo</span>
-            <span className="text-xs text-muted-foreground">Toca para escolher um ficheiro</span>
-          </span>
-        )}
-      </label>
-
-      <div className="grid gap-2">
-        <Label htmlFor={`${base}-title`}>Título</Label>
-        <Input id={`${base}-title`} placeholder="Ex.: Vídeo exclusivo" className={fieldClass} />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="mt-1.5 flex h-24 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-border text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent/40"
+        >
+          {preview ? (
+            <span className="truncate px-4">{file?.name}</span>
+          ) : (
+            <>
+              <ImagePlus className="size-5" /> Escolher foto ou vídeo
+            </>
+          )}
+        </button>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor={`${base}-desc`}>Descrição</Label>
-        <Textarea
-          id={`${base}-desc`}
-          placeholder="Uma descrição breve sobre o conteúdo."
-          className="min-h-24 resize-none rounded-2xl border-transparent bg-secondary px-4 py-3 shadow-none"
-        />
-      </div>
+      {error && <p className="text-sm font-medium text-destructive">{error}</p>}
 
-      <div className="grid gap-2">
-        <span id={`${base}-kind`} className="text-sm font-medium leading-none">
-          Tipo de conteúdo
-        </span>
-        <div role="radiogroup" aria-labelledby={`${base}-kind`} className="grid grid-cols-3 gap-2">
-          {kindOptions.map((key) => {
-            const Icon = kinds[key].icon;
-            const selected = key === kind;
-            return (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setKind(key)}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  selected
-                    ? "bg-primary/15 text-primary ring-1 ring-primary"
-                    : "bg-secondary text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="size-5" aria-hidden="true" />
-                {kinds[key].short}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor={`${base}-price`}>Preço</Label>
-        <div className="relative">
-          <Input
-            id={`${base}-price`}
-            inputMode="numeric"
-            placeholder="0"
-            className={cn(fieldClass, "pr-12")}
-          />
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
-            Kz
-          </span>
-        </div>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor={`${base}-link`}>Link de acesso</Label>
-        <div className="relative">
-          <Link2
-            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            id={`${base}-link`}
-            type="url"
-            inputMode="url"
-            placeholder="https://"
-            className={cn(fieldClass, "pl-11")}
-          />
-        </div>
-        <p className="text-xs leading-5 text-muted-foreground">
-          O comprador só recebe este link depois de o pagamento ser confirmado.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 pt-1">
-        <Button type="button" variant="secondary" className="h-12 rounded-2xl font-semibold">
-          Guardar rascunho
-        </Button>
-        <Button type="button" className="h-12 rounded-2xl font-bold">
-          Publicar conteúdo
-        </Button>
-      </div>
-    </div>
+      <Button
+        type="submit"
+        disabled={create.isPending}
+        className="h-12 w-full rounded-2xl font-bold"
+      >
+        {create.isPending && <Loader2 className="size-4 animate-spin" />}
+        Publicar conteúdo
+      </Button>
+    </form>
   );
 }
