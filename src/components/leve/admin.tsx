@@ -181,7 +181,11 @@ function Overview({ accounts }: { accounts: AdminAccount[] }) {
       value: accounts.filter((a) => !a.phone_verified).length,
       icon: Smartphone,
     },
-    { label: "Contas com selo", value: accounts.filter((a) => a.verified).length, icon: BadgeCheck },
+    {
+      label: "Contas com selo",
+      value: accounts.filter((a) => a.verified).length,
+      icon: BadgeCheck,
+    },
   ];
 
   return (
@@ -315,7 +319,9 @@ function PhoneVerificationArea({
         subtitle="O código não expira — só deixa de valer depois de ser usado uma vez. Entrega-o à pessoa (ex.: por Instagram) usando o número mostrado aqui."
       />
 
-      <h2 className="mt-6 text-sm font-bold text-muted-foreground">Por entregar · {pending.length}</h2>
+      <h2 className="mt-6 text-sm font-bold text-muted-foreground">
+        Por entregar · {pending.length}
+      </h2>
       <div className="mt-2 space-y-2">
         {pending.map((account) => (
           <CodeRow key={account.id} account={account} onChanged={onChanged} />
@@ -375,10 +381,15 @@ function CodeRow({ account, onChanged }: { account: AdminAccount; onChanged: () 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <AccountAvatar letter={initialOf(account.name || account.username)} src={account.avatar_url} />
+        <AccountAvatar
+          letter={initialOf(account.name || account.username)}
+          src={account.avatar_url}
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{account.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{account.phone ?? "sem telefone"}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {account.phone ?? "sem telefone"}
+          </p>
           {error && <p className="mt-0.5 text-xs font-medium text-destructive">{error}</p>}
         </div>
       </div>
@@ -464,7 +475,10 @@ function BadgeRow({ account, onChanged }: { account: AdminAccount; onChanged: ()
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <AccountAvatar letter={initialOf(account.name || account.username)} src={account.avatar_url} />
+        <AccountAvatar
+          letter={initialOf(account.name || account.username)}
+          src={account.avatar_url}
+        />
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 truncate text-sm font-bold">
             {account.name}

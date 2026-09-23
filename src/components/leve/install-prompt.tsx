@@ -29,7 +29,11 @@ function isIos() {
 function wasSnoozed() {
   try {
     const stored = Number(localStorage.getItem(SNOOZE_KEY));
-    return Number.isFinite(stored) && stored > 0 && Date.now() - stored < SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+    return (
+      Number.isFinite(stored) &&
+      stored > 0 &&
+      Date.now() - stored < SNOOZE_DAYS * 24 * 60 * 60 * 1000
+    );
   } catch {
     return false;
   }

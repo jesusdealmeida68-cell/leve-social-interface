@@ -204,6 +204,25 @@ export function VideoPlayer({
   const seekingRef = useRef(false);
   const prefsRef = useRef(prefs);
 
+  /**
+   * Muda uma preferência já no elemento de vídeo, na mesma chamada do clique
+   * (alguns telemóveis só deixam ligar o som ou mudar a velocidade assim,
+   * dentro do próprio toque — se ficar só à espera do efeito, não faz nada).
+   */
+  const applyPrefs = useCallback(
+    (patch: Partial<Prefs>) => {
+      const video = videoRef.current;
+      if (video) {
+        if (patch.muted !== undefined) video.muted = patch.muted;
+        if (patch.volume !== undefined) video.volume = patch.volume;
+        if (patch.speed !== undefined) video.playbackRate = patch.speed;
+        if (patch.loop !== undefined) video.loop = patch.loop;
+      }
+      update(patch);
+    },
+    [update],
+  );
+
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [ended, setEnded] = useState(false);
@@ -410,7 +429,7 @@ export function VideoPlayer({
       event.preventDefault();
       skip(5, "right");
     } else if (key === "m") {
-      update({ muted: !prefs.muted });
+      applyPrefs({ muted: !prefs.muted });
     } else if (key === "f") {
       void toggleFullscreen();
     }
@@ -571,7 +590,7 @@ export function VideoPlayer({
         aria-label={prefs.muted ? "Ativar som" : "Desativar som"}
         aria-pressed={!prefs.muted}
         onClick={() => {
-          update({ muted: !prefs.muted });
+          applyPrefs({ muted: !prefs.muted });
           wake();
         }}
         className="absolute right-3 top-3 z-[3] grid size-9 place-items-center rounded-full bg-black/45 text-white backdrop-blur-md transition-colors hover:bg-black/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
@@ -599,17 +618,17 @@ export function VideoPlayer({
           <SwitchRow
             label="Reprodução automática"
             checked={prefs.autoplay}
-            onChange={(value) => update({ autoplay: value })}
+            onChange={(value) => applyPrefs({ autoplay: value })}
           />
           <SwitchRow
             label="Repetir"
             checked={prefs.loop}
-            onChange={(value) => update({ loop: value })}
+            onChange={(value) => applyPrefs({ loop: value })}
           />
           <SwitchRow
             label="Som"
             checked={!prefs.muted}
-            onChange={(value) => update({ muted: !value })}
+            onChange={(value) => applyPrefs({ muted: !value })}
           />
           <div className="px-3 pb-2 pt-3">
             <p className="text-xs text-muted-foreground">Velocidade</p>
@@ -619,7 +638,7 @@ export function VideoPlayer({
                   key={value}
                   type="button"
                   aria-pressed={prefs.speed === value}
-                  onClick={() => update({ speed: value })}
+                  onClick={() => applyPrefs({ speed: value })}
                   className={`h-8 rounded-full text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${prefs.speed === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {speedLabel(value)}
@@ -689,7 +708,7 @@ export function VideoPlayer({
               value={prefs.muted ? 0 : prefs.volume}
               onChange={(event) => {
                 const value = Number(event.target.value);
-                update({ volume: value, muted: value === 0 });
+                applyPrefs({ volume: value, muted: value === 0 });
               }}
               className="h-1 w-20 cursor-pointer accent-primary"
             />
