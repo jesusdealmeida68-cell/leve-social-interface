@@ -174,6 +174,80 @@ export type Database = {
           },
         ]
       }
+      paid_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          kind: string
+          media_type: string | null
+          media_url: string | null
+          price: number
+          sales: number
+          seller_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: string
+          media_type?: string | null
+          media_url?: string | null
+          price?: number
+          sales?: number
+          seller_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: string
+          media_type?: string | null
+          media_url?: string | null
+          price?: number
+          sales?: number
+          seller_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      paid_purchases: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          item_id: string
+          price: number
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          price?: number
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paid_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "paid_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_views: {
         Row: {
           post_id: string
@@ -316,6 +390,7 @@ export type Database = {
       }
       am_i_admin: { Args: never; Returns: boolean }
       my_phone_verified: { Args: never; Returns: boolean }
+      my_verified: { Args: never; Returns: boolean }
       register_post_view: {
         Args: { p_post_id: string; p_viewer_key: string }
         Returns: number
